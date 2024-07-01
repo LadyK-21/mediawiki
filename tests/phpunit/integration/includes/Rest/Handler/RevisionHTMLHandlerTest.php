@@ -39,8 +39,7 @@ class RevisionHTMLHandlerTest extends MediaWikiIntegrationTestCase {
 
 	private const HTML = '>World<';
 
-	/** @var HashBagOStuff */
-	private $parserCacheBagOStuff;
+	private HashBagOStuff $parserCacheBagOStuff;
 
 	/** @var int */
 	private static $uuidCounter = 0;
@@ -90,6 +89,10 @@ class RevisionHTMLHandlerTest extends MediaWikiIntegrationTestCase {
 				$this->getParsoidOutputStash(),
 				$services->getStatsdDataFactory(),
 				$parsoidOutputAccess,
+				$services->getParserOutputAccess(),
+				$services->getPageStore(),
+				$services->getRevisionLookup(),
+				$services->getParsoidSiteConfig(),
 				$services->getHtmlTransformFactory(),
 				$services->getContentHandlerFactory(),
 				$services->getLanguageFactory()

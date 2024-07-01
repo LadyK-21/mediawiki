@@ -60,6 +60,7 @@ use MWCryptRand;
 use MWExceptionHandler;
 use RuntimeException;
 use stdClass;
+use Stringable;
 use UnexpectedValueException;
 use WANObjectCache;
 use Wikimedia\Assert\Assert;
@@ -90,7 +91,7 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * @note {@}newable in 1.35 only, the constructor is {@}internal since 1.36
  */
 #[AllowDynamicProperties]
-class User implements Authority, UserIdentity, UserEmailContact {
+class User implements Stringable, Authority, UserIdentity, UserEmailContact {
 	use DebugInfoTrait;
 	use ProtectedHookAccessorTrait;
 	use WikiAwareEntityTrait;
@@ -1007,6 +1008,7 @@ class User implements Authority, UserIdentity, UserEmailContact {
 		$this->mActorId = $actorId;
 		$this->mRealName = '';
 		$this->mEmail = '';
+		$this->isTemp = null;
 
 		$loggedOut = $this->mRequest && !defined( 'MW_NO_SESSION' )
 			? $this->mRequest->getSession()->getLoggedOutTimestamp() : 0;
@@ -2431,7 +2433,7 @@ class User implements Authority, UserIdentity, UserEmailContact {
 
 		$this->mTouched = $newTouched;
 		if ( $this->isNamed() ) {
-			MediaWikiServices::getInstance()->getUserOptionsManager()->saveOptionsInternal( $this, $dbw );
+			MediaWikiServices::getInstance()->getUserOptionsManager()->saveOptionsInternal( $this );
 		}
 
 		$this->getHookRunner()->onUserSaveSettings( $this );
@@ -2475,7 +2477,6 @@ class User implements Authority, UserIdentity, UserEmailContact {
 	 *   - email: The user's email address.
 	 *   - email_authenticated: The email authentication timestamp.
 	 *   - real_name: The user's real name.
-	 *   - options: An associative array of non-default options.
 	 *   - token: Random authentication token. Do not set.
 	 *   - registration: Registration timestamp. Do not set.
 	 * @return User|null User object, or null if the username already exists.
@@ -2504,12 +2505,6 @@ class User implements Authority, UserIdentity, UserEmailContact {
 		$user = new User;
 		$user->load();
 		$user->setToken(); // init token
-		if ( isset( $params['options'] ) ) {
-			MediaWikiServices::getInstance()
-				->getUserOptionsManager()
-				->loadUserOptions( $user, $user->queryFlagsUsed, $params['options'] );
-			unset( $params['options'] );
-		}
 		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 
 		$noPass = PasswordFactory::newInvalidPassword()->toString();

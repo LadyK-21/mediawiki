@@ -26,7 +26,7 @@
 		config = config || {};
 
 		// Parent constructor
-		mw.widgets.TitleInputWidget.super.call( this, $.extend( {}, config, {
+		mw.widgets.TitleInputWidget.super.call( this, Object.assign( {}, config, {
 			validate: config.validate !== undefined ? config.validate : this.isQueryValid.bind( this ),
 			autocomplete: false
 		} ) );
@@ -130,13 +130,11 @@
 	 * @inheritdoc
 	 */
 	mw.widgets.TitleInputWidget.prototype.cleanUpValue = function ( value ) {
-		const widget = this;
-
 		// Parent method
 		value = mw.widgets.TitleInputWidget.super.prototype.cleanUpValue.call( this, value );
 
-		return trimByteLength( this.value, value, this.maxLength, function ( val ) {
-			const title = widget.getMWTitle( val );
+		return trimByteLength( this.value, value, this.maxLength, ( val ) => {
+			const title = this.getMWTitle( val );
 			return title ? title.getMain() : val;
 		} ).newVal;
 	};

@@ -14,13 +14,11 @@
 }
 
 .mw-collapsible-toggle-default {
-	// stylelint-disable plugin/no-unsupported-browser-features
 	// This element is now a button, but it used to be a link, so keep link styles for now
 	// (until someone dares to try to change the design).
 	-webkit-appearance: none;
 	-moz-appearance: none;
 	appearance: none;
-	// stylelint-enable plugin/no-unsupported-browser-features
 	background: none;
 	margin: 0;
 	padding: 0;
@@ -28,7 +26,7 @@
 	font: inherit;
 
 	.mw-collapsible-text {
-		color: @color-link;
+		.cdx-mixin-link-base();
 
 		.mw-underline-always & {
 			text-decoration: underline;
@@ -37,14 +35,6 @@
 		.mw-underline-never & {
 			text-decoration: none;
 		}
-	}
-
-	&:hover .mw-collapsible-text {
-		text-decoration: underline;
-	}
-
-	&:active .mw-collapsible-text {
-		color: @color-link--active;
 	}
 
 	&::before {

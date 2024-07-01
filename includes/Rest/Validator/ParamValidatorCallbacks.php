@@ -11,11 +11,8 @@ use Wikimedia\ParamValidator\Callbacks;
 
 class ParamValidatorCallbacks implements Callbacks {
 
-	/** @var Authority */
-	private $authority;
-
-	/** @var RequestInterface */
-	private $request;
+	private RequestInterface $request;
+	private Authority $authority;
 
 	public function __construct(
 		RequestInterface $request,
@@ -40,6 +37,7 @@ class ParamValidatorCallbacks implements Callbacks {
 				return $this->request->getQueryParams();
 
 			case 'post':
+				wfDeprecatedMsg( 'The "post" source is deprecated, use "body" instead', '1.43' );
 				return $this->request->getPostParams();
 
 			case 'body':

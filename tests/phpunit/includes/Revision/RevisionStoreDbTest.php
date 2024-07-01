@@ -25,7 +25,6 @@ use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\RevisionStoreRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
-use MediaWiki\Status\Status;
 use MediaWiki\Storage\BlobStore;
 use MediaWiki\Storage\SqlBlobStore;
 use MediaWiki\Tests\Unit\DummyServicesTrait;
@@ -2762,6 +2761,7 @@ class RevisionStoreDbTest extends MediaWikiIntegrationTestCase {
 	 * @covers \MediaWiki\Revision\RevisionStore::countAuthorsBetween
 	 */
 	public function testAuthorsBetween() {
+		$this->disableAutoCreateTempUser();
 		$NUM = 5;
 		$page = $this->getTestPage( __METHOD__ );
 		$users = [
@@ -3082,9 +3082,11 @@ class RevisionStoreDbTest extends MediaWikiIntegrationTestCase {
 
 		$mainRow = $records[$revRecord1->getId()][SlotRecord::MAIN];
 		$this->assertNull( $mainRow->blob_data );
-		$this->assertSame(
-			"* (internalerror_info: oops!)\n* (internalerror_info: Couldn&#39;t find blob data for rev {$revRecord1->getId()})",
-			Status::wrap( $result )->getMessage()->inLanguage( 'qqx' )->text()
+		$this->assertStatusMessagesExactly(
+			StatusValue::newGood()
+				->warning( 'internalerror_info', 'oops!' )
+				->warning( 'internalerror_info', "Couldn't find blob data for rev {$revRecord1->getId()}" ),
+			$result
 		);
 	}
 

@@ -59,14 +59,10 @@
 	float: left;
 }
 
-@media only screen and ( min-width: @width-breakpoint-tablet ) {
+@media only screen and ( min-width: @min-width-breakpoint-tablet ) {
 	.mw-search-results-container,
 	.mw-search-results-info {
 		width: ~'calc( 100% / 12 * 7 )';
-	}
-
-	.mw-search-profile-tabs {
-		width: 50em;
 	}
 }
 
@@ -102,7 +98,6 @@
 			/* Note: below !important required to override an unrelated !important in minerva skin */
 			/* stylelint-disable-next-line declaration-no-important */
 			height: 100% !important;
-			/* stylelint-disable-next-line plugin/no-unsupported-browser-features */
 			object-fit: cover;
 			object-position: top;
 			border: @border-subtle;
@@ -133,6 +128,8 @@
 	margin-top: 1em;
 	border: @border-subtle;
 	border-radius: @border-radius-base;
+	// ooui's @max-width-base
+	max-width: 50em;
 }
 
 .search-types {

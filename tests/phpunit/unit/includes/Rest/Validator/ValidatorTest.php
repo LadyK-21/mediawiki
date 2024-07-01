@@ -378,7 +378,7 @@ class ValidatorTest extends MediaWikiUnitTestCase {
 	}
 
 	public static function provideValidateParams() {
-		$sources = [ 'path', 'query', 'post' ];
+		$sources = [ 'path', 'query' ];
 		$paramNames = [
 			"path" => "pathParams",
 			"query" => "queryParams",
@@ -446,7 +446,67 @@ class ValidatorTest extends MediaWikiUnitTestCase {
 				]
 			],
 			new RequestData( [ 'pathParams' => [ 'foo' => 'test' ] ] ),
-			[] // The parameter from an unknown source should be ignored.
+			[] // The parameter from a non-body source should be ignored.
+		];
+
+		yield 'empty string' => [
+			[
+				'foo' => [
+					ParamValidator::PARAM_TYPE => 'string',
+					ParamValidator::PARAM_REQUIRED => true,
+					Validator::PARAM_SOURCE => 'body',
+				]
+			],
+			new RequestData( [ 'parsedBody' => [ 'foo' => '' ] ] ),
+			[ 'foo' => '' ]
+		];
+
+		yield 'valid integer (strict)' => [
+			[
+				'foo' => [
+					ParamValidator::PARAM_TYPE => 'integer',
+					Validator::PARAM_SOURCE => 'body',
+				]
+			],
+			new RequestData( [ 'parsedBody' => [ 'foo' => 123 ] ] ),
+			[ 'foo' => 123 ]
+		];
+
+		yield 'string as integer (lenient)' => [
+			[
+				'foo' => [
+					ParamValidator::PARAM_TYPE => 'integer',
+					Validator::PARAM_SOURCE => 'body',
+				]
+			],
+			new RequestData( [ 'parsedBody' => [ 'foo' => '123' ] ] ),
+			[ 'foo' => 123 ],
+			false, // don't enforce types
+		];
+
+		yield 'string as integer (strict)' => [
+			[
+				'foo' => [
+					ParamValidator::PARAM_TYPE => 'integer',
+					Validator::PARAM_SOURCE => 'body',
+				]
+			],
+			new RequestData( [ 'parsedBody' => [ 'foo' => '123' ] ] ),
+			[ 'foo' => 123 ],
+			// Should be an HttpException in the future, when Validator
+			// starts using OPT_ENFORCE_JSON_TYPES instead of OPT_LOG_BAD_TYPES
+			// (T305973).
+			/*new LocalizedHttpException(
+				new MessageValue( 'paramvalidator-badinteger-type' ),
+				400,
+				[
+					'error' => 'parameter-validation-failed',
+					'name' => 'foo',
+					'value' => '123',
+					'failureCode' => 'badinteger-type',
+					'failureData' => null,
+				]
+			),*/
 		];
 
 		yield "valid complex value" => [
@@ -503,12 +563,17 @@ class ValidatorTest extends MediaWikiUnitTestCase {
 	/**
 	 * @dataProvider provideValidateBodyParams
 	 */
-	public function testValidateBodyParams( $paramSetting, RequestData $requestData, $expected ) {
+	public function testValidateBodyParams(
+		$paramSetting,
+		RequestData $requestData,
+		$expected,
+		$enforceTypes = true
+	) {
 		$objectFactory = $this->getDummyObjectFactory();
 		$validator = new Validator( $objectFactory, $requestData, $this->mockAnonNullAuthority() );
 
 		try {
-			$actual = $validator->validateBodyParams( $paramSetting );
+			$actual = $validator->validateBodyParams( $paramSetting, $enforceTypes );
 
 			if ( $expected instanceof Exception ) {
 				$this->fail( 'Expected exception: ' . $expected );
@@ -533,6 +598,24 @@ class ValidatorTest extends MediaWikiUnitTestCase {
 				$this->fail( 'Unexpected exception: ' . $ex );
 			}
 		}
+	}
+
+	public function testValidateParams_post() {
+		$this->expectDeprecationAndContinue( '/The "post" source is deprecated/' );
+
+		$requestData = new RequestData( [ 'postParams' => [ 'foo' => 'bar' ] ] );
+		$paramSetting = [
+			'foo' => [
+				ParamValidator::PARAM_TYPE => 'string',
+				Validator::PARAM_SOURCE => 'post',
+			]
+		];
+
+		$objectFactory = $this->getDummyObjectFactory();
+		$validator = new Validator( $objectFactory, $requestData, $this->mockAnonNullAuthority() );
+
+		$actual = $validator->validateParams( $paramSetting );
+		$this->assertSame( [ 'foo' => 'bar' ], $actual );
 	}
 
 	public static function provideDetectExtraneousBodyFields() {

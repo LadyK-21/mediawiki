@@ -3,6 +3,7 @@
 namespace MediaWiki\OutputTransform\Stages;
 
 use Language;
+use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Html\Html;
 use MediaWiki\MainConfigNames;
@@ -13,6 +14,7 @@ use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Tidy\TidyDriverBase;
 use ParserOptions;
+use Psr\Log\LoggerInterface;
 use Wikimedia\Parsoid\Core\TOCData;
 
 /**
@@ -23,7 +25,10 @@ class HandleTOCMarkers extends ContentTextTransformStage {
 
 	private TidyDriverBase $tidy;
 
-	public function __construct( TidyDriverBase $tidy ) {
+	public function __construct(
+		ServiceOptions $options, LoggerInterface $logger, TidyDriverBase $tidy
+	) {
+		parent::__construct( $options, $logger );
 		$this->tidy = $tidy;
 	}
 

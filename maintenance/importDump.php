@@ -26,6 +26,7 @@
 
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Permissions\UltimateAuthority;
+use MediaWiki\User\User;
 
 require_once __DIR__ . '/Maintenance.php';
 
@@ -334,7 +335,7 @@ TEXT
 			$statusRootPage = $importer->setTargetRootPage( $this->getOption( 'rootpage' ) );
 			if ( !$statusRootPage->isGood() ) {
 				// Die here so that it doesn't print "Done!"
-				$this->fatalError( $statusRootPage->getMessage( false, false, 'en' )->text() );
+				$this->fatalError( $statusRootPage );
 			}
 		}
 		if ( $this->hasOption( 'skip-to' ) ) {

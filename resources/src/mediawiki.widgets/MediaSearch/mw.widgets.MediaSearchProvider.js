@@ -20,7 +20,7 @@
 	mw.widgets.MediaSearchProvider = function MwWidgetsMediaSearchProvider( apiurl, config ) {
 		config = config || {};
 
-		config.staticParams = $.extend( {
+		config.staticParams = Object.assign( {
 			generator: 'search',
 			gsrnamespace: mw.config.get( 'wgNamespaceIds' ).file,
 			uselang: mw.config.get( 'wgUserLanguage' )
@@ -57,9 +57,7 @@
 	 * @inheritdoc
 	 */
 	mw.widgets.MediaSearchProvider.prototype.sort = function ( results ) {
-		return results.sort( function ( a, b ) {
-			return a.index - b.index;
-		} );
+		return results.sort( ( a, b ) => a.index - b.index );
 	};
 
 	/**

@@ -1,14 +1,14 @@
 /*!
  * JavaScript for History action
  */
-$( function () {
+$( () => {
 	var
 		$pagehistory = $( '#pagehistory' ),
 		$lis = $pagehistory.find( '.mw-contributions-list > li' );
 
 	/**
 	 * @ignore
-	 * @this {Element} input
+	 * @this Element input
 	 * @param {jQuery.Event} e
 	 * @return {boolean} False to cancel the default event
 	 */

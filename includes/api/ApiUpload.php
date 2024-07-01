@@ -29,6 +29,7 @@ use MediaWiki\Config\Config;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use MediaWiki\Status\Status;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
@@ -605,7 +606,7 @@ class ApiUpload extends ApiBase {
 	 */
 	public function dieStatusWithCode( $status, $overrideCode, $moreExtraData = null ) {
 		$sv = StatusValue::newGood();
-		foreach ( $status->getErrors() as $error ) {
+		foreach ( $status->getMessages() as $error ) {
 			$msg = ApiMessage::create( $error, $overrideCode );
 			if ( $moreExtraData ) {
 				$msg->setApiData( $msg->getApiData() + $moreExtraData );
@@ -1145,7 +1146,7 @@ class ApiUpload extends ApiBase {
 						'status' => (string)$status
 					]
 				);
-				$this->dieRecoverableError( $status->getErrors() );
+				$this->dieRecoverableError( $status->getMessages() );
 			}
 			$result['result'] = 'Success';
 		}

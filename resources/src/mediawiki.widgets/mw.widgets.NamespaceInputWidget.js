@@ -21,7 +21,7 @@
 	 */
 	mw.widgets.NamespaceInputWidget = function MwWidgetsNamespaceInputWidget( config ) {
 		// Configuration initialization
-		config = $.extend( {}, config, { options: this.constructor.static.getNamespaceDropdownOptions( config ) } );
+		config = Object.assign( {}, config, { options: this.constructor.static.getNamespaceDropdownOptions( config ) } );
 
 		// Parent constructor
 		mw.widgets.NamespaceInputWidget.super.call( this, config );
@@ -59,7 +59,7 @@
 			mw.config.get( 'wgFormattedNamespaces' );
 
 		// eslint-disable-next-line no-jquery/no-map-util
-		const options = $.map( namespaces, function ( name, ns ) {
+		const options = $.map( namespaces, ( name, ns ) => {
 			if ( ns < mainNamespace || exclude.indexOf( Number( ns ) ) !== -1 ) {
 				return null; // skip
 			}
@@ -68,10 +68,10 @@
 				name = mw.msg( 'blanknamespace' );
 			}
 			return { data: ns, label: name };
-		} ).sort( function ( a, b ) {
+		} ).sort(
 			// wgFormattedNamespaces is an object, and so technically doesn't have to be ordered
-			return a.data - b.data;
-		} );
+			( a, b ) => a.data - b.data
+		);
 
 		if ( config.includeAllValue !== null && config.includeAllValue !== undefined ) {
 			options.unshift( {

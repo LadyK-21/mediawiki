@@ -35,6 +35,7 @@ use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\HookContainer\HookRunner;
 use MediaWiki\Languages\LanguageConverterFactory;
 use MediaWiki\MainConfigNames;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Permissions\PermissionStatus;
@@ -258,6 +259,7 @@ class AuthManager implements LoggerAwareInterface {
 	 * @param UserFactory $userFactory
 	 * @param UserIdentityLookup $userIdentityLookup
 	 * @param UserOptionsManager $userOptionsManager
+	 *
 	 */
 	public function __construct(
 		WebRequest $request,
@@ -1406,7 +1408,7 @@ class AuthManager implements LoggerAwareInterface {
 			}
 
 			// Avoid account creation races on double submissions
-			$cache = \ObjectCache::getLocalClusterInstance();
+			$cache = MediaWikiServices::getInstance()->getObjectCacheFactory()->getLocalClusterInstance();
 			$lock = $cache->getScopedLock( $cache->makeGlobalKey( 'account', md5( $user->getName() ) ) );
 			if ( !$lock ) {
 				// Don't clear AuthManager::accountCreationState for this code
@@ -1663,12 +1665,12 @@ class AuthManager implements LoggerAwareInterface {
 
 				// Log the creation
 				if ( $this->config->get( MainConfigNames::NewUserLog ) ) {
-					$isAnon = $creator->isAnon();
+					$isNamed = $creator->isNamed();
 					$logEntry = new \ManualLogEntry(
 						'newusers',
-						$logSubtype ?: ( $isAnon ? 'create' : 'create2' )
+						$logSubtype ?: ( $isNamed ? 'create2' : 'create' )
 					);
-					$logEntry->setPerformer( $isAnon ? $user : $creator );
+					$logEntry->setPerformer( $isNamed ? $creator : $user );
 					$logEntry->setTarget( $user->getUserPage() );
 					/** @var CreationReasonAuthenticationRequest $req */
 					$req = AuthenticationRequest::getRequestByClass(
@@ -1907,7 +1909,7 @@ class AuthManager implements LoggerAwareInterface {
 		}
 
 		// Avoid account creation races on double submissions
-		$cache = \ObjectCache::getLocalClusterInstance();
+		$cache = MediaWikiServices::getInstance()->getObjectCacheFactory()->getLocalClusterInstance();
 		$lock = $cache->getScopedLock( $cache->makeGlobalKey( 'account', md5( $username ) ) );
 		if ( !$lock ) {
 			$this->logger->debug( __METHOD__ . ': Could not acquire account creation lock', [

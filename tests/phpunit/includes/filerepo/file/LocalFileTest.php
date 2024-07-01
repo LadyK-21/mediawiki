@@ -289,8 +289,8 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function providePermissionChecks() {
-		$capablePerformer = $this->mockAnonAuthorityWithPermissions( [ 'deletedhistory', 'deletedtext' ] );
-		$incapablePerformer = $this->mockAnonAuthorityWithoutPermissions( [ 'deletedhistory', 'deletedtext' ] );
+		$capablePerformer = $this->mockRegisteredAuthorityWithPermissions( [ 'deletedhistory', 'deletedtext' ] );
+		$incapablePerformer = $this->mockRegisteredAuthorityWithoutPermissions( [ 'deletedhistory', 'deletedtext' ] );
 		yield 'Deleted, RAW' => [
 			'performer' => $incapablePerformer,
 			'audience' => File::RAW,
@@ -333,7 +333,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 		UserIdentity $uploader,
 		int $deletedFlags
 	): OldLocalFile {
-		$this->db->newInsertQueryBuilder()
+		$this->getDb()->newInsertQueryBuilder()
 			->insertInto( 'oldimage' )
 			->row( [
 				'oi_name' => 'Random-11m.png',
@@ -348,11 +348,11 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 				'oi_minor_mime' => 'png',
 				'oi_description_id' => $this->getServiceContainer()
 					->getCommentStore()
-					->createComment( $this->db, 'comment' )->id,
+					->createComment( $this->getDb(), 'comment' )->id,
 				'oi_actor' => $this->getServiceContainer()
 					->getActorStore()
-					->acquireActorId( $uploader, $this->db ),
-				'oi_timestamp' => $this->db->timestamp( '20201105235242' ),
+					->acquireActorId( $uploader, $this->getDb() ),
+				'oi_timestamp' => $this->getDb()->timestamp( '20201105235242' ),
 				'oi_sha1' => 'sy02psim0bgdh0jt4vdltuzoh7j80ru',
 				'oi_deleted' => $deletedFlags,
 			] )
@@ -387,13 +387,13 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 				'fa_minor_mime' => 'png',
 				'fa_description_id' => $this->getServiceContainer()
 					->getCommentStore()
-					->createComment( $this->db, 'comment' )->id,
+					->createComment( $this->getDb(), 'comment' )->id,
 				'fa_actor' => $this->getServiceContainer()
 					->getActorStore()
-					->acquireActorId( $uploader, $this->db ),
+					->acquireActorId( $uploader, $this->getDb() ),
 				'fa_user' => $uploader->getId(),
 				'fa_user_text' => $uploader->getName(),
-				'fa_timestamp' => $this->db->timestamp( '20201105235242' ),
+				'fa_timestamp' => $this->getDb()->timestamp( '20201105235242' ),
 				'fa_sha1' => 'sy02psim0bgdh0jt4vdltuzoh7j80ru',
 				'fa_deleted' => $deletedFlags,
 			]
@@ -869,7 +869,10 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 			$path,
 			'comment',
 			'page text',
-			0
+			0,
+			false,
+			false,
+			$this->getTestUser()->getUser()
 		);
 		$this->assertStatusGood( $status );
 
@@ -880,7 +883,10 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 			$path,
 			'comment',
 			'page text',
-			0
+			0,
+			false,
+			false,
+			$this->getTestUser()->getUser()
 		);
 		$this->assertStatusGood( $status );
 	}

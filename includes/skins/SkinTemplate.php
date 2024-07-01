@@ -25,6 +25,7 @@ use MediaWiki\Html\Html;
 use MediaWiki\Linker\Linker;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\ResourceLoader as RL;
 use MediaWiki\Skin\SkinComponentUtils;
@@ -517,16 +518,6 @@ class SkinTemplate extends Skin {
 					? 'login'
 					: 'login-private';
 				$personal_urls[$key] = $login_url;
-
-				if ( $this->getConfig()->get( MainConfigNames::ExperimentalLoginPopup ) ) {
-					// Allow testing the new login flows (T364941).
-					// The label is not localized because this is temporary and not to be enabled in production.
-					foreach ( [ 'popup', 'iframe', 'newtab' ] as $mode ) {
-						$personal_urls["login-experimental-$mode"] = $login_url;
-						unset( $personal_urls["login-experimental-$mode"]['single-id'] );
-						$personal_urls["login-experimental-$mode"]['text'] .= " (TEST: $mode)";
-					}
-				}
 			}
 		}
 
@@ -796,12 +787,17 @@ class SkinTemplate extends Skin {
 			$classes[] = 'selected';
 		}
 		$exists = true;
+		$services = MediaWikiServices::getInstance();
+		$linkClass = $services->getLinkRenderer()->getLinkClasses( $title );
 		if ( $checkEdit && !$title->isKnown() ) {
 			// Selected tabs should not show as red link. It doesn't make sense
 			// to show a red link on a page the user has already navigated to.
 			// https://phabricator.wikimedia.org/T294129#7451549
 			if ( !$selected ) {
+				// For historic reasons we add to the LI element
 				$classes[] = 'new';
+				// but adding the class to the A element is more appropriate.
+				$linkClass .= ' new';
 			}
 			$exists = false;
 			if ( $query !== '' ) {
@@ -810,9 +806,6 @@ class SkinTemplate extends Skin {
 				$query = 'action=edit&redlink=1';
 			}
 		}
-
-		$services = MediaWikiServices::getInstance();
-		$linkClass = $services->getLinkRenderer()->getLinkClasses( $title );
 
 		if ( $message instanceof MessageSpecifier ) {
 			$msg = new Message( $message );
@@ -840,7 +833,7 @@ class SkinTemplate extends Skin {
 			'exists' => $exists,
 			'primary' => true ];
 		if ( $linkClass !== '' ) {
-			$result['link-class'] = $linkClass;
+			$result['link-class'] = trim( $linkClass );
 		}
 
 		return $result;

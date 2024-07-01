@@ -1,3 +1,80 @@
+# 1.8.0 / 2024-06-25
+
+## Breaking Changes
+- [BREAKING] tokens: Remove remaining deprecated `width-*` breakpoint tokens (Volker E.)
+- [BREAKING] tokens: Remove CSS variables for border- tokens (Roan Kattouw)
+
+## Features
+- Table: add empty state (lwatson)
+- Tooltip: Introduce WIP component (directive) (Eric Gardner)
+- Menu, MenuItem: Add multiselect mode (Anne Tomasevich)
+- Tooltip: Allow tooltip to persist on hover (Eric Gardner)
+- Tooltip: add line-height (lwatson)
+- Tooltip: move out of WIP (lwatson)
+
+## Styles
+- tokens: Update dark mode text tokens (Derek Torsani)
+- styles, Tooltip: add animation and max-width (lwatson)
+- css-icon: Don't crash when `@param-size-icon` is a non-standard value (Roan Kattouw)
+- tokens: Use variable references in Sass, Less and full CSS outputs (Roan Kattouw)
+
+## Code
+- Remove redundant ‘https’ term in card.md (Cyndy)
+- build: Update diff-release.sh for the .mjs -> .js rename (Roan Kattouw)
+- ChipInput: Make chip descriptions optional (Anne Tomasevich)
+- Menu: Refactor tests using given-when-then structure (Anne Tomasevich)
+- Table: minor follow-ups (Anne Tomasevich)
+- tokens: Use transform instead of custom formatter for Less with CSS vars (Roan Kattouw)
+
+## Docs
+- docs, ChipInput: Remove remove-button-label prop from examples (Roan Kattouw)
+- docs: Add recent authors (>1 commit) (Anne Tomasevich)
+- docs: Document Jest pitfall around optional parameters (Roan Kattouw)
+- docs, Tooltip: update demos (lwatson)
+- Tooltip: Add basic guidelines (Eric Gardner)
+- docs: Fix typo in Jest pitfall docs (Roan Kattouw)
+
+
+# 1.7.0 / 2024-06-11
+
+## Deprecating changes
+- [DEPRECATING CHANGE] icons: Unify capitalization (Winston Sung)
+
+This release renames `cdxIconWikiText` to `cdxIconWikitext`, and
+`cdxIconNoWikiText` to `cdxIconNoWikitext`. The old names are deprecated,
+but can still be used.
+
+## Features
+- MenuButton: Publish the MenuButton component (Lauralyn Watson)
+- Radio: Add disabled+selected state styles (akiel)
+- tokens: Update `content-added` and `content-removed` token values (Derek Torsani)
+
+## Styles
+- tokens: Make CSS variable output include references (Roan Kattouw)
+- tokens: Don't reformat tokens without references (Roan Kattouw)
+
+## Code
+- build: Remove unneeded filename prefix (Anne Tomasevich)
+- demos: Add Vue version of disabled Radio group (Anne Tomasevich)
+- tokens: Move font-family theme tokens to work around SD bug (Roan Kattouw)
+- generateMWExamples: Fix script on Windows (Bartosz Dziewoński)
+- ToggleButton: Use component name in icon-only warning (Anne Tomasevich)
+- MenuButton: update the maximum width (Lauralyn Watson)
+- MenuButton: refactor the API for consistency (Lauralyn Watson)
+- MenuButton: Remove unnecessary `../components/` in import paths (Roan Kattouw)
+
+## Documentation
+- docs: remove `export` from public types (Lauralyn Watson)
+- docs: add MenuButton to Menu docs (Lauralyn Watson)
+- docs: add MenuButton demos (Lauralyn Watson)
+- docs: update "Content" recommendations (Bárbara Martínez Calvo)
+- docs: clean up MenuButton demo files and demo order (Anne Tomasevich)
+- docs: make small corrections in “Bidirectionality” guidelines (Bárbara Martínez Calvo)
+- docs, MenuButton: demo a selection triggering an action (Lauralyn Watson)
+- docs, MenuButton: update demos based on design feedback (Lauralyn Watson)
+- docs: update MenuButton max-width in the guidelines (Bárbara Martínez Calvo)
+- docs: update MenuButton's "Component limitations" guidelines (Bárbara Martínez Calvo)
+
 # 1.6.1 / 2024-05-29
 
 ## Features

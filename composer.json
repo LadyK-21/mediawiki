@@ -40,7 +40,7 @@
 		"liuggio/statsd-php-client": "1.0.18",
 		"mck89/peast": "1.16.2",
 		"monolog/monolog": "2.9.3",
-		"oojs/oojs-ui": "0.49.2",
+		"oojs/oojs-ui": "0.50.2",
 		"pear/mail": "1.6.0",
 		"pear/mail_mime": "1.10.12",
 		"pear/net_smtp": "1.12.1",
@@ -64,12 +64,12 @@
 		"wikimedia/composer-merge-plugin": "2.1.0",
 		"wikimedia/html-formatter": "4.1.0",
 		"wikimedia/ip-utils": "5.0.0",
-		"wikimedia/json-codec": "2.2.1",
+		"wikimedia/json-codec": "3.0.1",
 		"wikimedia/less.php": "4.4.1",
 		"wikimedia/minify": "2.7.0",
 		"wikimedia/normalized-exception": "1.0.1",
 		"wikimedia/object-factory": "5.0.1",
-		"wikimedia/parsoid": "0.20.0-a6",
+		"wikimedia/parsoid": "0.20.0-a11",
 		"wikimedia/php-session-serializer": "2.0.1",
 		"wikimedia/purtle": "1.0.8",
 		"wikimedia/relpath": "4.0.0",
@@ -178,7 +178,8 @@
 		"phpunit:integration": "@phpunit --colors=always --testsuite=core:integration,extensions:integration,skins:integration",
 		"phpunit:coverage": "@phpunit --testsuite=core:unit --exclude-group Dump,Broken",
 		"phpunit:coverage-edit": "MediaWiki\\Composer\\ComposerPhpunitXmlCoverageEdit::onEvent",
-		"phpunit:entrypoint": "@phpunit"
+		"phpunit:entrypoint": "@phpunit",
+		"maintenance": "@php maintenance/run.php"
 	},
 	"config": {
 		"optimize-autoloader": true,

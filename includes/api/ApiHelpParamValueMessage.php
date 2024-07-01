@@ -20,6 +20,8 @@
  * @file
  */
 
+use MediaWiki\Message\Message;
+
 /**
  * Message subclass that prepends wikitext for API help.
  *
@@ -115,7 +117,7 @@ class ApiHelpParamValueMessage extends Message {
 
 	private function subMessage( $key ) {
 		$msg = new Message( $key );
-		$msg->interface = $this->interface;
+		$msg->isInterface = $this->isInterface;
 		$msg->language = $this->language;
 		$msg->useDatabase = $this->useDatabase;
 		$msg->contextPage = $this->contextPage;

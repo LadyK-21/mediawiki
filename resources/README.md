@@ -1,3 +1,5 @@
+# MediaWiki Frontend API
+
 This documentation describes the public API that user scripts, gadgets, skins, and extensions can use to interact with [MediaWiki](https://www.mediawiki.org/wiki/Special:MyLanguage/MediaWiki).
 To interact with MediaWiki from outside a wiki, use the [Action API](https://www.mediawiki.org/wiki/Special:MyLanguage/API:Main_page).
 
@@ -67,7 +69,6 @@ Log errors, send deprecation warnings, and debug your code.
 - [mw.log](mw.log.html)
 
 ### Upstream
-- [jQuery plugins](jQueryPlugins.html)
 - [OOjs](https://doc.wikimedia.org/oojs/master/index.html) — JavaScript library for working with objects
 - [OOUI](https://doc.wikimedia.org/oojs-ui/master/js/) — component-based JavaScript UI library
 

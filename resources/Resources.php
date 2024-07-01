@@ -600,20 +600,9 @@ return [
 						'resources/lib/pinia/pinia.iife.js' :
 						'resources/lib/pinia/pinia.iife.prod.js';
 
-					$vueDemi = "require('vue');";
-					if ( $developmentMode ) {
-						// Import vue-demi during development mode to provide .set and .del
-						// functions that are only used during pinia's dev mode HMR.
-						// See T364518
-						$vueDemi = '(function(){var exports={};' .
-							file_get_contents( MW_INSTALL_PATH . '/resources/lib/vue-demi/index.cjs' ) .
-							';return exports;})();';
-					}
-
 					// The file shipped by Pinia does var Pinia = ...;, but doesn't export it
-					// Add module.exports = Pinia; programmatically.
-					return "var VueDemi=" .
-						$vueDemi .
+					// Add module.exports = Pinia; programmatically, and inject vue-demi.
+					return "var VueDemi=require('./vue-demi.js');" .
 						file_get_contents( MW_INSTALL_PATH . "/$file" ) .
 						';module.exports=Pinia;';
 				},
@@ -622,6 +611,20 @@ return [
 						'resources/lib/pinia/pinia.iife.js' :
 						'resources/lib/pinia/pinia.iife.prod.js';
 					return new FilePath( $file );
+				}
+			],
+			[
+				'name' => 'resources/lib/pinia/vue-demi.js',
+				'callback' => static function ( Context $context, Config $config ) {
+					$developmentMode = $config->get( MainConfigNames::VueDevelopmentMode ) || $context->getDebug();
+
+					// In non-development mode, Pinia doesn't need vue-demi, so don't load it.
+					// Instead, just wrap Vue.
+					if ( !$developmentMode ) {
+						return "module.exports=require('vue');";
+					}
+
+					return new FilePath( 'resources/lib/vue-demi/index.cjs' );
 				}
 			]
 		],
@@ -876,10 +879,7 @@ return [
 		'dependencies' => [
 			'mediawiki.util',
 			'mediawiki.widgets.visibleLengthLimit',
-		],
-		'messages' => [
-			'htmlform-chosen-placeholder',
-		],
+		]
 	],
 	'mediawiki.htmlform.ooui' => [
 		'scripts' => [
@@ -934,7 +934,7 @@ return [
 				=> [ 'media' => 'print' ],
 		],
 		'skinStyles' => [
-			'default' => 'resources/src/mediawiki.notification/default.css',
+			'default' => 'resources/src/mediawiki.notification/default.less',
 		],
 		'scripts' => 'resources/src/mediawiki.notification/notification.js',
 		'dependencies' => [
@@ -1438,7 +1438,7 @@ return [
 		'scripts' => 'resources/src/mediawiki.action/mediawiki.action.view.redirect.js',
 	],
 	'mediawiki.action.view.redirectPage' => [
-		'styles' => 'resources/src/mediawiki.action/mediawiki.action.view.redirectPage.css',
+		'styles' => 'resources/src/mediawiki.action/mediawiki.action.view.redirectPage.less',
 	],
 	'mediawiki.action.edit.editWarning' => [
 		'scripts' => 'resources/src/mediawiki.action/mediawiki.action.edit.editWarning.js',
@@ -1674,7 +1674,6 @@ return [
 			'ready.js',
 			'checkboxShift.js',
 			'checkboxHack.js',
-			'experimentalLoginPopup.js',
 			'teleportTarget.js',
 			'toggleAllCollapsibles.js',
 			[ 'name' => 'config.json', 'callback' => static function (
@@ -1685,7 +1684,6 @@ return [
 					'search' => true,
 					'collapsible' => true,
 					'sortable' => true,
-					'experimentalLoginPopup' => $config->get( MainConfigNames::ExperimentalLoginPopup ),
 					'selectorLogoutLink' => '#pt-logout a[data-mw="interface"]'
 				];
 
@@ -2137,6 +2135,30 @@ return [
 			'and'
 		],
 	],
+	'mediawiki.special.restsandbox.styles' => [
+		'styles' => [
+			'resources/src/mediawiki.special.restsandbox/restsandbox.css',
+		],
+	],
+	'mediawiki.special.restsandbox' => [
+		'localBasePath' => MW_INSTALL_PATH . '/resources',
+		'remoteBasePath' => "$wgResourceBasePath/resources",
+		'packageFiles' => [
+			"src/mediawiki.special.restsandbox/restsandbox.js",
+			"lib/swagger-ui/swagger-ui-bundle.js",
+			"lib/swagger-ui/swagger-ui-standalone-preset.js",
+			[
+				'name' => 'src/mediawiki.special.restsandbox/config.json',
+				'config' => [ 'RestSandboxSpecs' ],
+			],
+		],
+		'styles' => [
+			'lib/swagger-ui/swagger-ui.css',
+		],
+		'dependencies' => [
+			'mediawiki.special.restsandbox.styles'
+		]
+	],
 	'mediawiki.special.block' => [
 		'localBasePath' => MW_INSTALL_PATH . '/resources/src',
 		'remoteBasePath' => "$wgResourceBasePath/resources/src",
@@ -2278,12 +2300,16 @@ return [
 			'ipb-action-move',
 			'ipb-action-upload',
 			'ipbcreateaccount',
+			'ipbhidename',
 			'ipbemailban',
 			'ipb-disableusertalk',
 			'ipbenableautoblock',
 			'ipbwatchuser',
 			'ipb-hardblock'
 		],
+	],
+	'mediawiki.protectionIndicators.styles' => [
+		'styles' => 'resources/src/mediawiki.protectionIndicators/styles.less',
 	],
 	'mediawiki.special.changeslist' => [
 		'styles' => [

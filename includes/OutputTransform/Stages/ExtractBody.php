@@ -2,6 +2,7 @@
 
 namespace MediaWiki\OutputTransform\Stages;
 
+use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Html\HtmlHelper;
 use MediaWiki\OutputTransform\ContentTextTransformStage;
 use MediaWiki\Parser\Parser;
@@ -17,10 +18,16 @@ use Wikimedia\RemexHtml\Serializer\SerializerNode;
  */
 class ExtractBody extends ContentTextTransformStage {
 
-	private LoggerInterface $logger;
+	// @phan-suppress-next-line PhanUndeclaredTypeProperty
+	private ?\MobileContext $mobileContext;
 
-	public function __construct( LoggerInterface $logger ) {
-		$this->logger = $logger;
+	public function __construct(
+		ServiceOptions $options, LoggerInterface $logger,
+		// @phan-suppress-next-line PhanUndeclaredTypeParameter
+		?\MobileContext $mobileContext
+	) {
+		parent::__construct( $options, $logger );
+		$this->mobileContext = $mobileContext;
 	}
 
 	public function shouldRun( ParserOutput $po, ?ParserOptions $popts, array $options = [] ): bool {
@@ -68,6 +75,14 @@ class ExtractBody extends ContentTextTransformStage {
 		$baseHref = '';
 		if ( preg_match( '{<base href=["\']([^"\']+)["\'][^>]+>}', $text, $matches ) === 1 ) {
 			$baseHref = $matches[1];
+			// @phan-suppress-next-line PhanUndeclaredClassMethod
+			if ( $this->mobileContext !== null && $this->mobileContext->usingMobileDomain() ) {
+				// @phan-suppress-next-line PhanUndeclaredClassMethod
+				$mobileUrl = $this->mobileContext->getMobileUrl( $baseHref );
+				if ( $mobileUrl !== false ) {
+					$baseHref = $mobileUrl;
+				}
+			}
 		}
 		$title = $po->getExtensionData( ParsoidParser::PARSOID_TITLE_KEY );
 		if ( !$title ) {

@@ -25,6 +25,7 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use Stringable;
 use Throwable;
 use Wikimedia\AtEase\AtEase;
 use Wikimedia\Rdbms\Database\DatabaseFlags;
@@ -40,7 +41,7 @@ use Wikimedia\ScopedCallback;
  * @ingroup Database
  * @since 1.28
  */
-abstract class Database implements IDatabaseForOwner, IMaintainableDatabase, LoggerAwareInterface {
+abstract class Database implements Stringable, IDatabaseForOwner, IMaintainableDatabase, LoggerAwareInterface {
 	/** @var CriticalSectionProvider|null */
 	protected $csProvider;
 	/** @var LoggerInterface */
@@ -92,9 +93,9 @@ abstract class Database implements IDatabaseForOwner, IMaintainableDatabase, Log
 	/** @var string|bool|null Stashed value of html_errors INI setting */
 	private $htmlErrors;
 
-	/** @var array<string,array> Map of (name => (UNIX time,trx ID)) for current lock() mutexes */
+	/** @var array<string,array> Map of (lock name => (UNIX time,trx ID)) */
 	protected $sessionNamedLocks = [];
-	/** @var array<string,TempTableInfo> Current temp tables */
+	/** @var array<string,array<string, TempTableInfo>> Map of (DB name => table name => info) */
 	protected $sessionTempTables = [];
 
 	/** @var int Affected row count for the last statement to query() */
@@ -401,16 +402,6 @@ abstract class Database implements IDatabaseForOwner, IMaintainableDatabase, Log
 	}
 
 	/**
-	 * Get information about an index into an object
-	 *
-	 * @param string $table Table name
-	 * @param string $index Index name
-	 * @param string $fname Calling function name
-	 * @return mixed Database-specific index description class or false if the index does not exist
-	 */
-	abstract public function indexInfo( $table, $index, $fname = __METHOD__ );
-
-	/**
 	 * Wrapper for addslashes()
 	 *
 	 * @param string $s String to be slashed.
@@ -598,8 +589,8 @@ abstract class Database implements IDatabaseForOwner, IMaintainableDatabase, Log
 			// Parse error? Assume permanent.
 			return true;
 		}
-		$rawTable = $this->platform->tableName( $table, 'raw' );
-		$tempInfo = $this->sessionTempTables[$rawTable] ?? null;
+		[ $db, $pt ] = $this->platform->getDatabaseAndTableIdentifier( $table );
+		$tempInfo = $this->sessionTempTables[$db][$pt] ?? null;
 		return !$tempInfo || $tempInfo->pseudoPermanent;
 	}
 
@@ -615,16 +606,16 @@ abstract class Database implements IDatabaseForOwner, IMaintainableDatabase, Log
 		}
 		switch ( $query->getVerb() ) {
 			case 'CREATE TEMPORARY':
-				$rawTable = $this->platform->tableName( $table, 'raw' );
-				$this->sessionTempTables[$rawTable] = new TempTableInfo(
+				[ $db, $pt ] = $this->platform->getDatabaseAndTableIdentifier( $table );
+				$this->sessionTempTables[$db][$pt] = new TempTableInfo(
 					$this->transactionManager->getTrxId(),
 					(bool)( $query->getFlags() & self::QUERY_PSEUDO_PERMANENT )
 				);
 				break;
 
 			case 'DROP':
-				$rawTable = $this->platform->tableName( $table, 'raw' );
-				unset( $this->sessionTempTables[$rawTable] );
+				[ $db, $pt ] = $this->platform->getDatabaseAndTableIdentifier( $table );
+				unset( $this->sessionTempTables[$db][$pt] );
 		}
 	}
 
@@ -1050,20 +1041,22 @@ abstract class Database implements IDatabaseForOwner, IMaintainableDatabase, Log
 			}
 		}
 		// Loss of temp tables breaks future callers relying on those tables for queries
-		foreach ( $priorSessInfo->tempTables as $tableName => $tableInfo ) {
-			if ( $tableInfo->trxId && $tableInfo->trxId === $priorSessInfo->trxId ) {
-				// Treat lost temp tables created during the lost transaction as a transaction
-				// state problem. Connection loss on ROLLBACK (non-SAVEPOINT) is tolerable since
-				// rollback automatically triggered server-side.
-				if ( $verb !== 'ROLLBACK' ) {
-					$res = max( $res, self::ERR_ABORT_TRX );
+		foreach ( $priorSessInfo->tempTables as $domainTempTables ) {
+			foreach ( $domainTempTables as $tableName => $tableInfo ) {
+				if ( $tableInfo->trxId && $tableInfo->trxId === $priorSessInfo->trxId ) {
+					// Treat lost temp tables created during the lost transaction as a
+					// transaction state problem. Connection loss on ROLLBACK (non-SAVEPOINT)
+					// is tolerable since rollback automatically triggered server-side.
+					if ( $verb !== 'ROLLBACK' ) {
+						$res = max( $res, self::ERR_ABORT_TRX );
+						$blockers[] = "temp table '$tableName'";
+					}
+				} else {
+					// Treat lost temp tables created either during prior transactions or during
+					// no transaction as a session state problem.
+					$res = max( $res, self::ERR_ABORT_SESSION );
 					$blockers[] = "temp table '$tableName'";
 				}
-			} else {
-				// Treat lost temp tables created either during prior transactions or during
-				// no transaction as a session state problem.
-				$res = max( $res, self::ERR_ABORT_SESSION );
-				$blockers[] = "temp table '$tableName'";
 			}
 		}
 		// Loss of transaction writes breaks future callers and DBO_TRX logic relying on those
@@ -1450,30 +1443,30 @@ abstract class Database implements IDatabaseForOwner, IMaintainableDatabase, Log
 		return (bool)$info;
 	}
 
-	public function indexExists( $table, $index, $fname = __METHOD__ ) {
-		if ( !$this->tableExists( $table, $fname ) ) {
-			return null;
-		}
-
-		$info = $this->indexInfo( $table, $index, $fname );
-		if ( $info === null ) {
-			return null;
-		} else {
-			return $info !== false;
-		}
-	}
-
 	abstract public function tableExists( $table, $fname = __METHOD__ );
 
-	public function indexUnique( $table, $index, $fname = __METHOD__ ) {
-		$indexInfo = $this->indexInfo( $table, $index, $fname );
+	public function indexExists( $table, $index, $fname = __METHOD__ ) {
+		$info = $this->indexInfo( $table, $index, $fname );
 
-		if ( !$indexInfo ) {
-			return false;
-		}
-
-		return !$indexInfo[0]->Non_unique;
+		return (bool)$info;
 	}
+
+	public function indexUnique( $table, $index, $fname = __METHOD__ ) {
+		$info = $this->indexInfo( $table, $index, $fname );
+
+		return $info ? $info['unique'] : null;
+	}
+
+	/**
+	 * Get information about an index into an object
+	 *
+	 * @param string $table Unqualified name of table
+	 * @param string $index Index name
+	 * @param string $fname Calling function name
+	 * @return array<string,mixed>|false Index info map; false if it does not exist
+	 * @phan-return array{unique:bool}|false
+	 */
+	abstract public function indexInfo( $table, $index, $fname = __METHOD__ );
 
 	public function insert( $table, $rows, $fname = __METHOD__, $options = [] ) {
 		$query = $this->platform->dispatchingInsertSqlText( $table, $rows, $options );
@@ -1883,10 +1876,6 @@ abstract class Database implements IDatabaseForOwner, IMaintainableDatabase, Log
 			$destTable
 		);
 		$this->query( $query, $fname );
-	}
-
-	public function wasReadOnlyError() {
-		return false;
 	}
 
 	/**

@@ -20,6 +20,7 @@
 namespace Wikimedia\Rdbms;
 
 use stdClass;
+use Stringable;
 use Wikimedia\Rdbms\Database\DbQuoter;
 use Wikimedia\Rdbms\Database\IDatabaseFlags;
 use Wikimedia\Rdbms\Platform\ISQLPlatform;
@@ -33,7 +34,7 @@ use Wikimedia\Rdbms\Platform\ISQLPlatform;
  * @since 1.40
  * @ingroup Database
  */
-interface IReadableDatabase extends ISQLPlatform, DbQuoter, IDatabaseFlags {
+interface IReadableDatabase extends Stringable, ISQLPlatform, DbQuoter, IDatabaseFlags {
 
 	/** Parameter to unionQueries() for UNION ALL */
 	public const UNION_ALL = true;
@@ -591,32 +592,6 @@ interface IReadableDatabase extends ISQLPlatform, DbQuoter, IDatabaseFlags {
 	 * @since 1.36
 	 */
 	public function getServerName();
-
-	/**
-	 * Determines if the last failure was due to the database being read-only
-	 *
-	 * @return bool
-	 */
-	public function wasReadOnlyError();
-
-	/**
-	 * Wait for the replica server to catch up to a given primary server position
-	 *
-	 * Note that this does not start any new transactions.
-	 *
-	 * Callers might want to flush any existing transaction before invoking this method.
-	 * Upon success, this assures that replica server queries will reflect all changes up
-	 * to the given position, without interference from prior REPEATABLE-READ snapshots.
-	 *
-	 * @param DBPrimaryPos $pos
-	 * @param int $timeout The maximum number of seconds to wait for synchronisation
-	 * @return int|null Zero if the replica DB server was past that position already,
-	 *   greater than zero if we waited for some period of time, less than
-	 *   zero if it timed out, and null on error
-	 * @throws DBError If an error occurs, {@see query}
-	 * @since 1.37
-	 */
-	public function primaryPosWait( DBPrimaryPos $pos, $timeout );
 
 	/**
 	 * Ping the server and try to reconnect if it there is no connection

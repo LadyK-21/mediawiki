@@ -33,7 +33,7 @@
 	 */
 	mw.widgets.UsersMultiselectWidget = function MwWidgetsUsersMultiselectWidget( config ) {
 		// Config initialization
-		config = $.extend( {
+		config = Object.assign( {
 			limit: 10,
 			ipAllowed: false,
 			ipRangeAllowed: false,
@@ -44,10 +44,10 @@
 		}, config );
 
 		// Parent constructor
-		mw.widgets.UsersMultiselectWidget.super.call( this, $.extend( {}, config, {} ) );
+		mw.widgets.UsersMultiselectWidget.super.call( this, Object.assign( {}, config, {} ) );
 
 		// Mixin constructors
-		OO.ui.mixin.PendingElement.call( this, $.extend( {}, config, { $pending: this.$handle } ) );
+		OO.ui.mixin.PendingElement.call( this, Object.assign( {}, config, { $pending: this.$handle } ) );
 
 		// Properties
 		this.limit = config.limit;
@@ -139,13 +139,13 @@
 					list: 'allusers',
 					auprefix: inputValue,
 					aulimit: this.limit
-				} ).done( function ( response ) {
+				} ).done( ( response ) => {
 					let suggestions = response.query.allusers;
 
 					const selected = this.getSelectedUsernames();
 
 					// Remove usernames, which are already selected from suggestions
-					suggestions = suggestions.map( function ( user ) {
+					suggestions = suggestions.map( ( user ) => {
 						if ( selected.indexOf( user.name ) === -1 ) {
 							return new OO.ui.MenuOptionWidget( {
 								data: user.name,
@@ -154,9 +154,7 @@
 							} );
 						}
 						return undefined;
-					} ).filter( function ( item ) {
-						return item !== undefined;
-					} );
+					} ).filter( ( item ) => item !== undefined );
 
 					// Remove all items from menu add fill it with new
 					this.menu.clearItems();
@@ -171,7 +169,7 @@
 					this.menu.toggle( true );
 
 					this.popPending();
-				}.bind( this ) ).fail( this.popPending.bind( this ) );
+				} ).fail( this.popPending.bind( this ) );
 			}
 
 		} else {

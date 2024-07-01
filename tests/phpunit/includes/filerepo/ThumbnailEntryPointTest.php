@@ -1,11 +1,13 @@
 <?php
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\FileRepo\ThumbnailEntryPoint;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Permissions\SimpleAuthority;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Tests\FileRepo\TestRepoTrait;
 use MediaWiki\Tests\MockEnvironment;
+use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentityValue;
 
 /**
@@ -31,6 +33,9 @@ class ThumbnailEntryPointTest extends MediaWikiIntegrationTestCase {
 	 * will be called only once per test class
 	 */
 	public function addDBDataOnce() {
+		// Set a named user account for the request context as the default,
+		// so that these tests do not fail with temp accounts enabled
+		RequestContext::getMain()->setUser( $this->getTestUser()->getUser() );
 		// Create mock repo with test files
 		$this->initTestRepoGroup();
 
@@ -50,7 +55,7 @@ class ThumbnailEntryPointTest extends MediaWikiIntegrationTestCase {
 		$history = $file->getHistory();
 		$oldFile = $history[0];
 
-		$this->db->newUpdateQueryBuilder()
+		$this->getDb()->newUpdateQueryBuilder()
 			->table( 'oldimage' )
 			->set( [ 'oi_deleted' => 1 ] )
 			->where( [ 'oi_archive_name' => $oldFile->getArchiveName() ] )

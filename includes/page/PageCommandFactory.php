@@ -69,93 +69,37 @@ class PageCommandFactory implements
 	UndeletePageFactory
 {
 
-	/** @var Config */
-	private $config;
-
-	/** @var LBFactory */
-	private $lbFactory;
-
-	/** @var NamespaceInfo */
-	private $namespaceInfo;
-
-	/** @var WatchedItemStoreInterface */
-	private $watchedItemStore;
-
-	/** @var RepoGroup */
-	private $repoGroup;
-
-	/** @var ReadOnlyMode */
-	private $readOnlyMode;
-
-	/** @var IContentHandlerFactory */
-	private $contentHandlerFactory;
-
-	/** @var RevisionStoreFactory */
-	private $revisionStoreFactory;
-
-	/** @var SpamChecker */
-	private $spamChecker;
-
-	/** @var TitleFormatter */
-	private $titleFormatter;
-
-	/** @var HookContainer */
-	private $hookContainer;
-
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
-
-	/** @var UserFactory */
-	private $userFactory;
-
-	/** @var ActorMigration */
-	private $actorMigration;
-
-	/** @var ActorNormalization */
-	private $actorNormalization;
-
-	/** @var TitleFactory */
-	private $titleFactory;
-
-	/** @var UserEditTracker */
-	private $userEditTracker;
-
-	/** @var CollationFactory */
-	private $collationFactory;
-
-	/** @var JobQueueGroup */
-	private $jobQueueGroup;
-
-	/** @var CommentStore */
-	private $commentStore;
-
-	/** @var BagOStuff */
-	private $mainStash;
-
-	/** @var string */
-	private $localWikiID;
-
-	/** @var string */
-	private $webRequestID;
-
-	/** @var BacklinkCacheFactory */
-	private $backlinkCacheFactory;
-
-	/** @var LoggerInterface */
-	private $undeletePageLogger;
-
-	/** @var PageUpdaterFactory */
-	private $pageUpdaterFactory;
-
-	/** @var ITextFormatter */
-	private $contLangMsgTextFormatter;
-
-	/** @var ArchivedRevisionLookup */
-	private $archivedRevisionLookup;
-
-	/** @var RestrictionStore */
-	private $restrictionStore;
+	private Config $config;
+	private LBFactory $lbFactory;
+	private NamespaceInfo $namespaceInfo;
+	private WatchedItemStoreInterface $watchedItemStore;
+	private RepoGroup $repoGroup;
+	private ReadOnlyMode $readOnlyMode;
+	private IContentHandlerFactory $contentHandlerFactory;
+	private RevisionStoreFactory $revisionStoreFactory;
+	private SpamChecker $spamChecker;
+	private TitleFormatter $titleFormatter;
+	private HookContainer $hookContainer;
+	private WikiPageFactory $wikiPageFactory;
+	private UserFactory $userFactory;
+	private ActorMigration $actorMigration;
+	private ActorNormalization $actorNormalization;
+	private TitleFactory $titleFactory;
+	private UserEditTracker $userEditTracker;
+	private CollationFactory $collationFactory;
+	private JobQueueGroup $jobQueueGroup;
+	private CommentStore $commentStore;
+	private BagOStuff $mainStash;
+	private string $localWikiID;
+	private string $webRequestID;
+	private BacklinkCacheFactory $backlinkCacheFactory;
+	private LoggerInterface $undeletePageLogger;
+	private PageUpdaterFactory $pageUpdaterFactory;
+	private ITextFormatter $contLangMsgTextFormatter;
+	private ArchivedRevisionLookup $archivedRevisionLookup;
+	private RestrictionStore $restrictionStore;
 	private LinkTargetLookup $linkTargetLookup;
+	private RedirectStore $redirectStore;
 
 	public function __construct(
 		Config $config,
@@ -187,7 +131,8 @@ class PageCommandFactory implements
 		ITextFormatter $contLangMsgTextFormatter,
 		ArchivedRevisionLookup $archivedRevisionLookup,
 		RestrictionStore $restrictionStore,
-		LinkTargetLookup $linkTargetLookup
+		LinkTargetLookup $linkTargetLookup,
+		RedirectStore $redirectStore
 	) {
 		$this->config = $config;
 		$this->lbFactory = $lbFactory;
@@ -219,6 +164,7 @@ class PageCommandFactory implements
 		$this->archivedRevisionLookup = $archivedRevisionLookup;
 		$this->restrictionStore = $restrictionStore;
 		$this->linkTargetLookup = $linkTargetLookup;
+		$this->redirectStore = $redirectStore;
 	}
 
 	/**
@@ -262,6 +208,7 @@ class PageCommandFactory implements
 			$this->backlinkCacheFactory,
 			$this->namespaceInfo,
 			$this->contLangMsgTextFormatter,
+			$this->redirectStore,
 			$page,
 			$deleter
 		);

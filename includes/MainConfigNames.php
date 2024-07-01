@@ -1908,12 +1908,6 @@ class MainConfigNames {
 	public const LoginLanguageSelector = 'LoginLanguageSelector';
 
 	/**
-	 * Name constant for the ExperimentalLoginPopup setting, for use with Config::get()
-	 * @see MainConfigSchema::ExperimentalLoginPopup
-	 */
-	public const ExperimentalLoginPopup = 'ExperimentalLoginPopup';
-
-	/**
 	 * Name constant for the ForceUIMsgAsContentMsg setting, for use with Config::get()
 	 * @see MainConfigSchema::ForceUIMsgAsContentMsg
 	 */
@@ -4235,6 +4229,12 @@ class MainConfigNames {
 	public const RestAPIAdditionalRouteFiles = 'RestAPIAdditionalRouteFiles';
 
 	/**
+	 * Name constant for the RestSandboxSpecs setting, for use with Config::get()
+	 * @see MainConfigSchema::RestSandboxSpecs
+	 */
+	public const RestSandboxSpecs = 'RestSandboxSpecs';
+
+	/**
 	 * Name constant for the MaxShellMemory setting, for use with Config::get()
 	 * @see MainConfigSchema::MaxShellMemory
 	 */
@@ -4461,5 +4461,11 @@ class MainConfigNames {
 	 * @see MainConfigSchema::ShowLogoutConfirmation
 	 */
 	public const ShowLogoutConfirmation = 'ShowLogoutConfirmation';
+
+	/**
+	 * Name constant for the EnableProtectionIndicators setting, for use with Config::get()
+	 * @see MainConfigSchema::EnableProtectionIndicators
+	 */
+	public const EnableProtectionIndicators = 'EnableProtectionIndicators';
 
 }

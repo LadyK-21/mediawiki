@@ -34,6 +34,8 @@ For notes on 1.42.x and older releases, see HISTORY.
   More information: https://www.mediawiki.org/wiki/Heading_HTML_changes
   In a future release the new markup will become the default,
   and later this option will be removed.
+* (T12347) $wgEnableProtectionIndicators - Defaults to false, setting it to true
+  shows a lock icon indicator on protected pages.
 * …
 
 ==== Changed configuration ====
@@ -41,6 +43,10 @@ For notes on 1.42.x and older releases, see HISTORY.
 * wgPageLinksSchemaMigrationStage – (T299947) This temporary setting, which
   controls the database schema migration for the page links table, is now set
   by default to write to both old and new data and read from the new data.
+* wgFooterIcons – (T256190) The default "Powered by MediaWiki" button icon has
+  been updated to an SVG icon, and the footer icons are now wrapped as buttons
+  in HTML, rather than faking it within the icons themselves. You should adjust
+  any footer icons you provide or over-ride to match.
 * The "error-json" channel, configurable via $wgDebugLogGroups, has been
   removed. For structured logging, use the "error" channel directly instead.
   Since MediaWiki 1.25, structured logging is supported via Monolog for all
@@ -58,6 +64,8 @@ For notes on 1.42.x and older releases, see HISTORY.
 === New user-facing features in 1.43 ===
 
 * (T338341) Support reading XMP and EXIF from WebP files
+* (T365636) Wiki's with wgAllowExternalImages enabled now detect urls
+  with AVIF, SVG and WebP images.
 * (T242346) Special:TalkPage is a new special page that will redirect to the
   associated talk namespace page, e.g. [[Special:TalkPage/Foo]] redirects to
   [[Talk:Foo]]; [[Special:TalkPage/Project:Foo]] goes to [[Project talk:Foo]].
@@ -106,12 +114,12 @@ For notes on 1.42.x and older releases, see HISTORY.
 
 ==== Changed external libraries ====
 * Updated codex, codex-design-tokens and codex-icons
-  from v1.3.6 to v1.6.1.
+  from v1.3.6 to v1.8.0.
 * Updated guzzlehttp/guzzle from 7.7.1 to 7.8.1.
 * Updated pear/net_smtp from 1.11.1 to 1.12.1.
 * Updated monolog/monolog from 2.9.2 to 2.9.3.
 * Updated symfony/yaml from 5.4.35 to 5.4.39.
-* Updated OOUI from v0.49.1 to v0.49.2.
+* Updated OOUI from v0.49.1 to v0.50.2.
 * Updated wikimedia/less.php from 4.2.1 to 4.4.1.
 * Updated vue from 3.3.9 to 3.4.27.
 * …
@@ -130,6 +138,10 @@ For notes on 1.42.x and older releases, see HISTORY.
 
 === Bug fixes in 1.43 ===
 
+* When using the 'runMaintenance' method in a LoadExtensionSchemaUpdates hook
+  handler, only the script's class name is required, not its path. (T367918)
+* QueryPage::recache() (used by the updateSpecialPages.php maintenance script)
+  no longer attempts to ignore database errors. (T278543)
 * …
 
 === Action API changes in 1.43 ===
@@ -147,9 +159,11 @@ MediaWiki supports over 350 languages. Many localisations are updated regularly.
 Below only new and removed languages are listed, as well as changes to languages
 because of Phabricator reports.
 
+* (T367377) Updated the auotonym for Tai Nuea (tdd)
 * (T290657) Added language support for Levantine Arabic (apc).
 * (T364291) Added language support for Musi, also known as Palembang (mui).
 * (T365365) Added language support for Chakma (ccp).
+* (T367991) Added language support for Iban (iba).
 * …
 
 === Breaking changes in 1.43 ===
@@ -225,6 +239,8 @@ because of Phabricator reports.
 * IDatabase::getTopologyRole() has been removed without deprecation.
 * IDatabase::getTopologyBasedServerId() has been removed without deprecation.
   Use IDatabase::getServerName() instead.
+* IReadableDatabase::wasReadOnlyError() has been removed without deprecation.
+  Use IDatabase::isReadOnly() instead.
 * IReadableDatabase::wasDeadlock() has been removed without deprecation.
 * ILoadBalancer::getWriterIndex() has been removed without deprecation.
   Use ServerInfo::WRITER_INDEX constant instead.
@@ -237,6 +253,9 @@ because of Phabricator reports.
 * SpecialBlock::getTargetAndType, deprecated since 1.36, has been removed.
 * ApiQueryBlockInfoTrait::addBlockInfoToQuery(), deprecated since 1.42, has been
   removed.
+* Linker::makeExternalLink() has been deprecated in favor of
+  LinkRenderer::makeExternalLink(), which has a improved API to help phan's
+  SecurityCheckPlugin provide more accurate checks for escaping issues.
 * Linker::makeHeadline(), Linker::generateTOC(), Linker::tocIndent(),
   Linker::tocUnindent(), Linker::tocLine(), Linker::tocLineEnd(), and
   Linker::tocList(), deprecated in 1.42, have been removed.
@@ -245,14 +264,41 @@ because of Phabricator reports.
   have been removed.
 * DummyLinker has been removed. The former DummyLinker parameter
   to the 'ImageBeforeProduceHTML' hook is now null.
+* The following methods of IDatabase have been moved to internal interface
+  IDatabaseForOwner without deprecation. These methods are internal and
+  shouldn't be used outside of rdbms library:
+  - ::pendingWriteCallers()
+  - ::flushSession()
+  - ::lastDoneWrites()
+  - ::setTransactionListener()
+  - ::serverIsReadOnly()
+  - ::getPrimaryPos()
+  - ::pendingWriteQueryDuration()
+  - ::writesOrCallbacksPending()
+  - ::writesPending()
+  - ::primaryPosWait()
 * IMaintainableDatabase::listViews(), deprecated since 1.42, has been removed.
 * IMaintainableDatabase::truncate(), deprecated since 1.42, has been removed.
 * IMaintainableDatabase::textFieldSize() was removed without deprecation.
+* The "options" parameter to User::createNew() and the $data parameter to
+  UserOptionsManager::loadUserOptions() were removed.
 * `.list-style-image()` mixin from mediawiki.mixins.less, deprecated since 1.38,
   has been removed.
 * `.background-image()` mixin from mediawiki.mixins.less, deprecated since 1.38,
   has been removed.
 * IDatabase::nextSequenceValue(), deprecated since 1.30, was removed.
+* The setStats() method in MediaWiki\Rest\Router now expects a StatsFactory
+  rather than a StatsdDataFactoryInterface. The method has been marked @internal
+  and should not be called by extensions.
+* All `@width-breakpoint-*` Less variables have been removed. Use
+  `@min-width-breakpoint-*`/`@max-width-breakpoint-*` instead.
+* The following ParserOption methods, deprecated since 1.35, were removed:
+  - ::setAllowExternalImages()
+  - ::setAllowExternalImagesFrom()
+  - ::setEnableImageWhitelist()
+* Sanitizer::removeHTMLtags(), deprecated since 1.38, has been removed.
+* OutputPage::getCSPNonce(), deprecated since 1.35, has been removed.
+* UserMailer::rfc822Phrase(), deprecated since 1.38, has been removed.
 * …
 
 === Deprecations in 1.43 ===
@@ -260,6 +306,8 @@ because of Phabricator reports.
 * The methods StatusValue::getErrors() and StatusValue::getErrorsByType(),
   as well as Status::getErrorsArray() and Status::getWarningsArray(), have
   been deprecated in favor of new method StatusValue::getMessages().
+* PermissionManager::getPermissionErrors() has been deprecated in favor
+  of getPermissionStatus().
 * (T166010) All PHP code in MediaWiki is slowly being moved to be in a class
   namespace as appropriate, so that we can use PSR-4 auto-loading, which will
   speed up general code loading of MediaWiki. The old global namespace class
@@ -368,6 +416,16 @@ because of Phabricator reports.
   warnings.
 * User::isBlockedFromEmailuser() and User::canSendEmail(), deprecated since
   1.41, now emit deprecation warnings.
+* JsonUnserializable and related classes have been renamed to JsonDeserializable
+  to make it clearer that they're related to converting serialized content back
+  into JSON, rather than stating that things are not representable in JSON. The
+  previous class names have been left behind as deprecated aliases:
+   - JsonUnserializable -> JsonDeserializable
+   - JsonUnserializableTrait -> JsonDeserializableTrait
+   - JsonUnserializer -> JsonDeserializer
+  Additionally, JsonCodec's unserialize() and unserializeArray() methods have
+  also been renamed to deserialize() and deserializeArray(), with the old names
+  deprecated.
 * StatusValue will emit deprecation warnings when an error is given as
   a MessageSpecifier combined with a parameters array, which is usually
   a mistake, as the parameters have always been ignored.
@@ -378,6 +436,9 @@ because of Phabricator reports.
   DatabaseBlockStore.
 * DatabaseBlockStore::getReadStage() and ::getWriteStage() are deprecated.
   Use the new schema unconditionally.
+* UserOptionsManager::resetOptions(), ::listOptionKinds and ::getOptionKinds are
+  deprecated and will emit deprecation warnings. Use the corresponding methods
+  in PreferencesFactory and UserOptionsManager::resetOptionsByName().
 * To support a future change allowing serializing of MessageValue objects
   as JSON, the methods MessageValue::objectParams(), Message::objectParams()
   and Message::objectParam() are deprecated. The UserGroupMembershipParam
@@ -409,6 +470,7 @@ because of Phabricator reports.
 * (T362536) Exempted "deletedhistory", "deletedtext", and "viewsuppressed"
   rights from namespace protection ($wgNamespaceProtection) since that's
   only meant to prevent write actions.
+* Image captions are no longer trimmed.
 * …
 
 == Compatibility ==

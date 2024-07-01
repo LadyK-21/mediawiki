@@ -14,6 +14,7 @@ use MediaWiki\Parser\ParserOutputFlags;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Title\TitleFactory;
 use ParserOptions;
+use Psr\Log\LoggerInterface;
 use Skin;
 
 /**
@@ -25,14 +26,17 @@ class HandleSectionLinks extends ContentTextTransformStage {
 	private const HEADING_REGEX =
 		'/<H(?P<level>[1-6])(?P<attrib>(?:[^\'">]*|"([^"]*)"|\'([^\']*)\')*>)(?P<header>[\s\S]*?)<\/H[1-6] *>/i';
 
-	private ServiceOptions $options;
 	private TitleFactory $titleFactory;
 
+	/** @internal */
+	public const CONSTRUCTOR_OPTIONS = [
+		MainConfigNames::ParserEnableLegacyHeadingDOM, // For HandleSectionLinks
+	];
+
 	public function __construct(
-		ServiceOptions $options,
-		TitleFactory $titleFactory
+		ServiceOptions $options, LoggerInterface $logger, TitleFactory $titleFactory
 	) {
-		$this->options = $options;
+		parent::__construct( $options, $logger );
 		$this->titleFactory = $titleFactory;
 	}
 

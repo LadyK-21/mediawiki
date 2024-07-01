@@ -19,6 +19,7 @@
  * @ingroup Parser
  */
 
+use MediaWiki\Message\Message;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Title\Title;
 
@@ -27,7 +28,7 @@ use MediaWiki\Title\Title;
  * @ingroup Parser
  */
 // phpcs:ignore Squiz.Classes.ValidClassName.NotCamelCaps
-class PPFrame_Hash implements PPFrame {
+class PPFrame_Hash implements Stringable, PPFrame {
 
 	/**
 	 * @var Parser

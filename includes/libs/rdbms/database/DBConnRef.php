@@ -3,6 +3,7 @@
 namespace Wikimedia\Rdbms;
 
 use InvalidArgumentException;
+use Stringable;
 
 /**
  * Helper class used for automatically re-using IDatabase connections and lazily
@@ -33,7 +34,7 @@ use InvalidArgumentException;
  * @ingroup Database
  * @since 1.22
  */
-class DBConnRef implements IMaintainableDatabase, IDatabaseForOwner {
+class DBConnRef implements Stringable, IMaintainableDatabase, IDatabaseForOwner {
 	/** @var ILoadBalancer */
 	private $lb;
 	/** @var Database|null Live connection handle */
@@ -591,10 +592,6 @@ class DBConnRef implements IMaintainableDatabase, IDatabaseForOwner {
 	}
 
 	public function strreplace( $orig, $old, $new ) {
-		return $this->__call( __FUNCTION__, func_get_args() );
-	}
-
-	public function wasReadOnlyError() {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 

@@ -5,6 +5,7 @@ use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Deferred\UserEditCountUpdate;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
@@ -15,6 +16,8 @@ use MediaWiki\User\UserRigorOptions;
  * @group Database
  */
 class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
+
+	use TempUserTestTrait;
 
 	/**
 	 * Do an edit
@@ -45,7 +48,7 @@ class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
 	 * @param int|null $count
 	 */
 	private function setDbEditCount( $user, $count ) {
-		$this->db->newUpdateQueryBuilder()
+		$this->getDb()->newUpdateQueryBuilder()
 			->update( 'user' )
 			->set( [ 'user_editcount' => $count ] )
 			->where( [ 'user_id' => $user->getId() ] )
@@ -109,6 +112,7 @@ class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testGetEditTimestamp_anon() {
+		$this->disableAutoCreateTempUser();
 		$user = $this->getServiceContainer()->getUserFactory()
 			->newFromName( '127.0.0.1', UserRigorOptions::RIGOR_NONE );
 		$tracker = $this->getServiceContainer()->getUserEditTracker();
@@ -133,7 +137,7 @@ class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
 
 		$editCountStart = $tracker->getUserEditCount( $user );
 
-		$this->db->startAtomic( __METHOD__ ); // let deferred updates queue up
+		$this->getDb()->startAtomic( __METHOD__ ); // let deferred updates queue up
 
 		$tracker->incrementUserEditCount( $user );
 		$this->assertSame(
@@ -149,7 +153,7 @@ class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
 			'No update queued for anonymous user'
 		);
 
-		$this->db->endAtomic( __METHOD__ ); // run deferred updates
+		$this->getDb()->endAtomic( __METHOD__ ); // run deferred updates
 		$this->assertSame(
 			0,
 			DeferredUpdates::pendingUpdatesCount(),

@@ -46,6 +46,9 @@ abstract class Handler {
 	/** @var Authority */
 	private $authority;
 
+	/** @var string */
+	private $path;
+
 	/** @var array */
 	private $config;
 
@@ -78,17 +81,19 @@ abstract class Handler {
 	 * initServices().
 	 *
 	 * @param Module $module
+	 * @param string $path
 	 * @param array $routeConfig information about the route declaration.
 	 *
 	 * @internal
 	 */
-	final public function initContext( Module $module, array $routeConfig ) {
+	final public function initContext( Module $module, string $path, array $routeConfig ) {
 		Assert::precondition(
 			$this->authority === null,
 			'initContext() must be called before initServices()'
 		);
 
 		$this->module = $module;
+		$this->path = $path;
 		$this->config = $routeConfig;
 	}
 
@@ -228,7 +233,7 @@ abstract class Handler {
 	 * @return string
 	 */
 	public function getPath(): string {
-		return $this->getConfig()['path'];
+		return $this->path;
 	}
 
 	/**
@@ -279,7 +284,7 @@ abstract class Handler {
 	 * @return string
 	 */
 	protected function getRouteUrl( $pathParams = [], $queryParams = [] ): string {
-		$path = $this->getConfig()['path'];
+		$path = $this->getPath();
 		return $this->getRouter()->getRouteUrl( $path, $pathParams, $queryParams );
 	}
 
@@ -383,8 +388,16 @@ abstract class Handler {
 			// TODO: trigger a deprecation warning
 			$this->validatedBody = $legacyValidatedBody;
 		} else {
+			// Allow type coercion if the request body is form data.
+			// For JSON requests, insist on proper types.
+			$enforceTypes = !in_array(
+				$this->request->getBodyType(),
+				RequestInterface::FORM_DATA_CONTENT_TYPES
+			);
+
 			$this->validatedBody = $restValidator->validateBodyParams(
-				$this->getBodyParamSettings()
+				$this->getBodyParamSettings(),
+				$enforceTypes
 			);
 
 			// If there is a body, check if it contains extra fields.
@@ -634,7 +647,7 @@ abstract class Handler {
 
 		$spec = [
 			'parameters' => $parameters,
-			'responses' => $this->getResponseSpec(),
+			'responses' => $this->generateResponseSpec(),
 		];
 
 		$requestBody = $this->getRequestSpec();
@@ -644,12 +657,8 @@ abstract class Handler {
 
 		// TODO: Allow additional information about parameters and responses to
 		//       be provided in the route definition.
-		$overrides = array_intersect_key(
-			$this->getConfig(),
-			array_flip( [ 'description', 'summary', 'tags', 'deprecated', 'externalDocs', 'security' ] )
-		);
-
-		$spec = $overrides + $spec;
+		$oas = $this->getConfig()['OAS'] ?? [];
+		$spec += $oas;
 
 		return $spec;
 	}
@@ -717,7 +726,7 @@ abstract class Handler {
 	 * @stable to override
 	 * @return array
 	 */
-	protected function getResponseSpec(): array {
+	protected function generateResponseSpec(): array {
 		$ok = [ 'description' => 'OK' ];
 
 		$bodySchema = $this->getResponseBodySchema();
@@ -828,11 +837,16 @@ abstract class Handler {
 			);
 		}
 
+		// if it's supported and ends with "+json", we can probably parse it like a normal application/json request
+		$contentType = str_ends_with( $contentType ?? '', '+json' )
+			? RequestInterface::JSON_CONTENT_TYPE
+			: $contentType;
+
 		switch ( $contentType ) {
-			case 'application/x-www-form-urlencoded':
-			case 'multipart/form-data':
+			case RequestInterface::FORM_URLENCODED_CONTENT_TYPE:
+			case RequestInterface::MULTIPART_FORM_DATA_CONTENT_TYPE:
 				return $request->getPostParams();
-			case 'application/json':
+			case RequestInterface::JSON_CONTENT_TYPE:
 				$jsonStream = $request->getBody();
 				$parsedBody = json_decode( "$jsonStream", true );
 				if ( !is_array( $parsedBody ) ) {
@@ -887,13 +901,14 @@ abstract class Handler {
 	 */
 	public function getSupportedRequestTypes(): array {
 		$types = [
-			'application/json'
+			RequestInterface::JSON_CONTENT_TYPE
 		];
 
+		// TODO: remove this once "post" parameters are no longer supported! T362850
 		foreach ( $this->getParamSettings() as $settings ) {
 			if ( ( $settings[self::PARAM_SOURCE] ?? null ) === 'post' ) {
-				$types[] = 'application/x-www-form-urlencoded';
-				$types[] = 'multipart/form-data';
+				$types[] = RequestInterface::FORM_URLENCODED_CONTENT_TYPE;
+				$types[] = RequestInterface::MULTIPART_FORM_DATA_CONTENT_TYPE;
 				break;
 			}
 		}

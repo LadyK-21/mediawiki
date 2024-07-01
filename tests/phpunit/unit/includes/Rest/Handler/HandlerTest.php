@@ -24,7 +24,7 @@ use Wikimedia\TestingAccessWrapper;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
- * @covers \MediaWiki\Rest\Handler\SearchHandler
+ * @covers \MediaWiki\Rest\Handler
  */
 class HandlerTest extends MediaWikiUnitTestCase {
 
@@ -33,11 +33,11 @@ class HandlerTest extends MediaWikiUnitTestCase {
 	/**
 	 * @param string[] $methods
 	 *
-	 * @return Handler|MockObject
+	 * @return Handler&MockObject
 	 */
 	private function newHandler( $methods = [] ) {
 		$methods = array_merge( $methods, [ 'execute' ] );
-		/** @var Handler|MockObject $handler */
+		/** @var Handler&MockObject $handler */
 		$handler = $this->getMockBuilder( Handler::class )
 			->onlyMethods( $methods )
 			->getMock();
@@ -57,7 +57,7 @@ class HandlerTest extends MediaWikiUnitTestCase {
 		$hookContainer = $this->createHookContainer();
 
 		$session = $this->getSession( true );
-		$handler->initContext( $module, [] );
+		$handler->initContext( $module, 'test', [] );
 		$handler->initServices( $authority, $responseFactory, $hookContainer );
 		$handler->initSession( $session );
 
@@ -206,9 +206,9 @@ class HandlerTest extends MediaWikiUnitTestCase {
 	}
 
 	public static function provideValidate() {
-		yield 'empty' => [ [], new RequestData(), [] ];
+		yield 'empty' => [ [], new RequestData(), [], [] ];
 
-		yield 'parameter' => [
+		yield 'query parameter' => [
 			[
 				'foo' => [
 					ParamValidator::PARAM_TYPE => 'string',
@@ -217,14 +217,92 @@ class HandlerTest extends MediaWikiUnitTestCase {
 				]
 			],
 			new RequestData( [ 'queryParams' => [ 'foo' => 'kittens' ] ] ),
+			[ 'foo' => 'kittens' ],
+			[]
+		];
+
+		yield 'body parameter' => [
+			[
+				'foo' => [
+					ParamValidator::PARAM_TYPE => 'string',
+					ParamValidator::PARAM_REQUIRED => true,
+					Handler::PARAM_SOURCE => 'body',
+				]
+			],
+			new RequestData( [ 'parsedBody' => [ 'foo' => 'kittens' ] ] ),
+			[],
 			[ 'foo' => 'kittens' ]
+		];
+
+		yield 'body parameter with type coercion' => [
+			[
+				'foo' => [
+					ParamValidator::PARAM_TYPE => 'integer',
+					ParamValidator::PARAM_REQUIRED => true,
+					Handler::PARAM_SOURCE => 'body',
+				]
+			],
+			// Form data automatically enabled type coercion
+			new RequestData( [
+				'headers' => [
+					'Content-Type' => RequestInterface::FORM_URLENCODED_CONTENT_TYPE
+				],
+				'parsedBody' => [ 'foo' => '1234' ]
+			] ),
+			[],
+			[ 'foo' => 1234 ]
+		];
+
+		// This will stop working when Validator starts using OPT_ENFORCE_JSON_TYPES
+		// instead of OPT_LOG_BAD_TYPES (T305973). Enable the corresponding test case
+		// in provideValidate_invalid() when that happens.
+		yield 'body parameter with type coercion (JSON)' => [
+			[
+				'foo' => [
+					ParamValidator::PARAM_TYPE => 'integer',
+					ParamValidator::PARAM_REQUIRED => true,
+					Handler::PARAM_SOURCE => 'body',
+				]
+			],
+			// Form data automatically enabled type coercion
+			new RequestData( [
+				'headers' => [
+					'Content-Type' => RequestInterface::JSON_CONTENT_TYPE
+				],
+				'parsedBody' => [ 'foo' => '1234' ]
+			] ),
+			[],
+			[ 'foo' => 1234 ]
 		];
 	}
 
 	/**
 	 * @dataProvider provideValidate
 	 */
-	public function testValidate( $paramSettings, $request, $expected ) {
+	public function testValidate( $paramSettings, $request, $expectedParams, $expectedBody ) {
+		$handler = $this->newHandler( [ 'getParamSettings' ] );
+		$handler->method( 'getParamSettings' )->willReturn( $paramSettings );
+
+		$this->initHandler( $handler, $request );
+		$this->validateHandler( $handler );
+
+		$this->assertSame( $expectedParams, $handler->getValidatedParams() );
+		$this->assertSame( $expectedBody, $handler->getValidatedBody() );
+	}
+
+	public function testValidate_post() {
+		$this->expectDeprecationAndContinue( '/The "post" source is deprecated/' );
+
+		$paramSettings = [
+			'foo' => [
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => true,
+				Handler::PARAM_SOURCE => 'post',
+			]
+		];
+
+		$request = new RequestData( [ 'postParams' => [ 'foo' => 'kittens' ] ] );
+
 		$handler = $this->newHandler( [ 'getParamSettings' ] );
 		$handler->method( 'getParamSettings' )->willReturn( $paramSettings );
 
@@ -232,19 +310,54 @@ class HandlerTest extends MediaWikiUnitTestCase {
 		$this->validateHandler( $handler );
 
 		$params = $handler->getValidatedParams();
-		$this->assertSame( $expected, $params );
+		$this->assertSame( [ 'foo' => 'kittens' ], $params );
 	}
 
-	public function testValidate_invalid() {
-		$paramSettings = [
-			'foo' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-				Handler::PARAM_SOURCE => 'query',
+	public static function provideValidate_invalid() {
+		yield 'missing required' => [
+			[
+				'foo' => [
+					ParamValidator::PARAM_TYPE => 'string',
+					ParamValidator::PARAM_REQUIRED => true,
+					Handler::PARAM_SOURCE => 'query',
+				]
+			],
+			[ 'queryParams' => [ 'bar' => 'kittens' ] ],
+			[
+				'error' => 'parameter-validation-failed',
+				'failureCode' => 'missingparam'
 			]
 		];
 
-		$request = new RequestData( [ 'queryParams' => [ 'bar' => 'kittens' ] ] );
+		// Enable this test when Validator starts using OPT_ENFORCE_JSON_TYPES
+		// instead of OPT_LOG_BAD_TYPES (T305973).
+		/*
+		yield 'body parameter without type coercion' => [
+			[
+				'foo' => [
+					ParamValidator::PARAM_TYPE => 'integer',
+					ParamValidator::PARAM_REQUIRED => true,
+					Handler::PARAM_SOURCE => 'body',
+				]
+			],
+			[ // JSON doesn't enable type coercion
+				'headers' => [ 'Content-Type' => 'application/json', ],
+				'parsedBody' => [ 'foo' => '1234' ]
+			],
+			[],
+			[
+				'error' => 'parameter-validation-failed',
+				'failureCode' => 'badinteger-type'
+			]
+		];
+		*/
+	}
+
+	/**
+	 * @dataProvider provideValidate_invalid
+	 */
+	public function testValidate_invalid( $paramSettings, $requestData, $expectedError ) {
+		$request = new RequestData( $requestData );
 
 		$handler = $this->newHandler( [ 'getParamSettings' ] );
 		$handler->method( 'getParamSettings' )->willReturn( $paramSettings );
@@ -255,8 +368,10 @@ class HandlerTest extends MediaWikiUnitTestCase {
 			$this->fail( 'Expected LocalizedHttpException' );
 		} catch ( LocalizedHttpException $ex ) {
 			$data = $ex->getErrorData();
-			$this->assertSame( 'parameter-validation-failed', $data['error'] ?? null );
-			$this->assertSame( 'missingparam', $data['failureCode'] ?? null );
+
+			foreach ( $expectedError as $field => $value ) {
+				$this->assertSame( $value, $data[$field] ?? null );
+			}
 		}
 	}
 
@@ -406,7 +521,7 @@ class HandlerTest extends MediaWikiUnitTestCase {
 	public function provideValidateBodyParams_invalid() {
 		$paramDefintions = [
 			'foo' => [
-				ParamValidator::PARAM_TYPE => 'integer',
+				ParamValidator::PARAM_TYPE => 'timestamp',
 				ParamValidator::PARAM_REQUIRED => true,
 				Handler::PARAM_SOURCE => 'body',
 			]
@@ -440,7 +555,7 @@ class HandlerTest extends MediaWikiUnitTestCase {
 					],
 				]
 			),
-			'badinteger'
+			'badtimestamp'
 		];
 	}
 
@@ -763,19 +878,30 @@ class HandlerTest extends MediaWikiUnitTestCase {
 				] ),
 				[ 'foo' => 'bar' ]
 			],
+			'json patch body' => [
+				new RequestData( [
+					'bodyContents' => '{"patch":[]}',
+					'headers' => [ 'Content-Type' => 'application/json-patch+json' ]
+				] ),
+				[ 'patch' => [] ]
+			],
+			'form data' => [
+				new RequestData( [
+					'postParams' => [ 'foo' => 'bar' ],
+					'headers' => [ 'Content-Type' => 'application/x-www-form-urlencoded' ]
+				] ),
+				[ 'foo' => 'bar' ]
+			],
+			'multipart form data' => [
+				new RequestData( [
+					'postParams' => [ 'foo' => 'bar' ],
+					'headers' => [ 'Content-Type' => 'multipart/form-data' ]
+				] ),
+				[ 'foo' => 'bar' ]
+			],
 			'unknown body type' => [
 				new RequestData( [
 					'headers' => [ 'Content-Type' => 'unknown/type' ]
-				] ),
-				new LocalizedHttpException(
-					new MessageValue( 'rest-unsupported-content-type', [ '' ] ),
-					415
-				)
-			],
-			'form data not supported' => [
-				new RequestData( [
-					'headers' => [ 'Content-Type' => 'application/x-www-form-urlencoded' ],
-					'postParams' => [ 'test' => 'foo' ]
 				] ),
 				new LocalizedHttpException(
 					new MessageValue( 'rest-unsupported-content-type', [ '' ] ),
@@ -817,7 +943,14 @@ class HandlerTest extends MediaWikiUnitTestCase {
 
 	/** @dataProvider provideParseBodyData */
 	public function testParseBodyData( $requestData, $expectedResult ) {
-		$handler = $this->newHandler();
+		$handler = $this->newHandler( [ 'getSupportedRequestTypes' ] );
+		$handler->method( 'getSupportedRequestTypes' )->willReturn( [
+			'application/json',
+			'application/json-patch+json',
+			'application/x-www-form-urlencoded',
+			'multipart/form-data'
+		] );
+
 		if ( $expectedResult instanceof LocalizedHttpException ) {
 			$this->expectException( LocalizedHttpException::class );
 			$this->expectExceptionCode( $expectedResult->getCode() );
@@ -827,6 +960,24 @@ class HandlerTest extends MediaWikiUnitTestCase {
 			$parsedBody = $handler->parseBodyData( $requestData );
 			$this->assertEquals( $expectedResult, $parsedBody );
 		}
+	}
+
+	public function testPostRequestFailsWithFormData() {
+		$handler = $this->newHandler();
+		$requestData = new RequestData( [
+			'headers' => [ 'Content-Type' => 'application/x-www-form-urlencoded' ],
+			'postParams' => [ 'test' => 'foo' ]
+		] );
+
+		$expectedResult = new LocalizedHttpException(
+			new MessageValue( 'rest-unsupported-content-type', [ '' ] ),
+			415
+		);
+
+		$this->expectException( LocalizedHttpException::class );
+		$this->expectExceptionCode( $expectedResult->getCode() );
+		$this->expectExceptionMessage( $expectedResult->getMessage() );
+		$handler->parseBodyData( $requestData );
 	}
 
 	public function testGetRequestFailsWithBody() {
@@ -1011,6 +1162,8 @@ class HandlerTest extends MediaWikiUnitTestCase {
 	 * are declared, so form data is allowed.
 	 */
 	public function testGetSupportedRequestTypes_post() {
+		$this->expectDeprecationAndContinue( '/The "post" source is deprecated/' );
+
 		$paramSettings = [
 			'test' => [
 				Handler::PARAM_SOURCE => 'post',
@@ -1032,12 +1185,12 @@ class HandlerTest extends MediaWikiUnitTestCase {
 		] );
 		$handler->parseBodyData( $request );
 
-		// The "post" parameter should be processed as "parameter", not as "body".
+		// The "post" parameter should be processed as "parameter" but not as "body".
 		$this->initHandler( $handler, $request );
 		$this->validateHandler( $handler );
 
-		$this->assertArrayNotHasKey( 'test', $handler->getValidatedBody() );
 		$this->assertArrayHasKey( 'test', $handler->getValidatedParams() );
+		$this->assertArrayNotHasKey( 'test', $handler->getValidatedBody() );
 	}
 
 	/**
@@ -1072,6 +1225,179 @@ class HandlerTest extends MediaWikiUnitTestCase {
 
 		$this->assertArrayHasKey( 'test', $handler->getValidatedBody() );
 		$this->assertArrayNotHasKey( 'test', $handler->getValidatedParams() );
+	}
+
+	public static function provideGetOpenApiSpec() {
+		yield 'basic' => [
+			[
+				'q' => [
+					Handler::PARAM_SOURCE => 'query',
+					ParamValidator::PARAM_REQUIRED => false,
+				],
+				'p' => [
+					Handler::PARAM_SOURCE => 'path',
+					ParamValidator::PARAM_REQUIRED => true,
+				],
+			],
+			[
+				'path' => 'test/{p}'
+			],
+			[
+				'parameters' => [
+					[
+						'name' => 'q',
+						'description' => 'q parameter',
+						'in' => 'query',
+						'schema' => [ 'type' => 'string', ],
+						'required' => false,
+					],
+					[
+						'name' => 'p',
+						'description' => 'p parameter',
+						'in' => 'path',
+						'schema' => [ 'type' => 'string', ],
+						'required' => true,
+					],
+				],
+				'responses' => [
+					200 => [ 'description' => 'OK', ],
+					400 => [ '$ref' => '#/components/responses/GenericErrorResponse', ],
+					500 => [ '$ref' => '#/components/responses/GenericErrorResponse', ],
+				],
+			],
+		];
+
+		yield 'optional path params' => [
+			[
+				'p' => [
+					Handler::PARAM_SOURCE => 'path',
+					ParamValidator::PARAM_REQUIRED => false,
+				],
+				'r' => [ // not in declared path, will be ignored
+					Handler::PARAM_SOURCE => 'path',
+					ParamValidator::PARAM_REQUIRED => false,
+				],
+			],
+			[
+				'path' => 'test/{p}'
+			],
+			[
+				'parameters' => [
+					[
+						'name' => 'p',
+						'description' => 'p parameter',
+						'in' => 'path',
+						'schema' => [ 'type' => 'string', ],
+						'required' => true, // required for this path
+					],
+				],
+				'responses' => [
+					200 => [ 'description' => 'OK', ],
+					400 => [ '$ref' => '#/components/responses/GenericErrorResponse', ],
+					500 => [ '$ref' => '#/components/responses/GenericErrorResponse', ],
+				],
+			]
+		];
+
+		yield 'OAS info' => [
+			[
+				'p' => [
+					Handler::PARAM_SOURCE => 'path',
+				],
+			],
+			[
+				'path' => 'test/{p}',
+				'OAS' => [
+					'title' => 'just a test',
+					'parameters' => 'will be ignored',
+				]
+			],
+			[
+				'parameters' => [
+					[
+						'name' => 'p',
+						'description' => 'p parameter',
+						'in' => 'path',
+						'schema' => [ 'type' => 'string', ],
+						'required' => true,
+					]
+				],
+				'responses' => [
+					200 => [ 'description' => 'OK', ],
+					400 => [ '$ref' => '#/components/responses/GenericErrorResponse', ],
+					500 => [ '$ref' => '#/components/responses/GenericErrorResponse', ],
+				],
+				'title' => 'just a test',
+			]
+		];
+	}
+
+	/**
+	 * @dataProvider provideGetOpenApiSpec
+	 */
+	public function testGetOpenApiSpec( $paramSettings, $config, $expected ) {
+		$handler = $this->newHandler( [ 'getParamSettings', 'getBodyParamSettings' ] );
+		$handler->method( 'getParamSettings' )->willReturn( $paramSettings );
+
+		$module = $this->newModule( [] );
+		$handler->initContext( $module, $config['path'] ?? 'test', $config );
+
+		$spec = $handler->getOpenApiSpec( 'GET' );
+		$this->assertSame( $expected, $spec );
+	}
+
+	public function testGetOpenApiSpec_post() {
+		$paramSettings = [
+			'p' => [
+				Handler::PARAM_SOURCE => 'path',
+			],
+		];
+		$bodySettings = [
+			'q' => [
+				Handler::PARAM_SOURCE => 'body',
+			]
+		];
+
+		$handler = $this->newHandler(
+			[
+				'getParamSettings',
+				'getBodyParamSettings',
+				'getSupportedRequestTypes',
+			]
+		);
+		$handler->method( 'getParamSettings' )->willReturn( $paramSettings );
+		$handler->method( 'getBodyParamSettings' )->willReturn( $bodySettings );
+		$handler->method( 'getSupportedRequestTypes' )->willReturn( [
+			'text/foo',
+			'application/bar',
+		] );
+
+		$config = [
+			'path' => 'test/{p}'
+		];
+
+		$module = $this->newModule( [] );
+		$handler->initContext( $module, $config['path'], $config );
+
+		$spec = $handler->getOpenApiSpec( 'POST' );
+
+		$expected = [
+			'parameters' => [
+				[
+					'name' => 'p',
+					'description' => 'p parameter',
+					'in' => 'path',
+					'schema' => [ 'type' => 'string', ],
+					'required' => true,
+				]
+			],
+			'responses' => [
+				200 => [ 'description' => 'OK', ],
+				400 => [ '$ref' => '#/components/responses/GenericErrorResponse', ],
+				500 => [ '$ref' => '#/components/responses/GenericErrorResponse', ],
+			],
+		];
+		$this->assertSame( $expected, $spec );
 	}
 
 }

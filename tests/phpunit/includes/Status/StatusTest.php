@@ -1,6 +1,9 @@
 <?php
 
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Language\RawMessage;
+use MediaWiki\Message\Message;
 use MediaWiki\Status\Status;
 use Wikimedia\Message\MessageValue;
 
@@ -220,10 +223,7 @@ class StatusTest extends MediaWikiLangTestCase {
 		$status2->error( $message2 );
 
 		$status1->merge( $status2 );
-		$this->assertEquals(
-			2,
-			count( $status1->getWarningsArray() ) + count( $status1->getErrorsArray() )
-		);
+		$this->assertCount( 2, $status1->getMessages() );
 	}
 
 	public function testMergeWithOverwriteValue() {
@@ -236,10 +236,7 @@ class StatusTest extends MediaWikiLangTestCase {
 		$status2->value = 'FooValue';
 
 		$status1->merge( $status2, true );
-		$this->assertEquals(
-			2,
-			count( $status1->getWarningsArray() ) + count( $status1->getErrorsArray() )
-		);
+		$this->assertCount( 2, $status1->getMessages() );
 		$this->assertEquals( 'FooValue', $status1->getValue() );
 	}
 
@@ -373,10 +370,10 @@ class StatusTest extends MediaWikiLangTestCase {
 		$status->warning( 'fooBar2!' );
 		$testCases['2StringWarnings'] = [
 			$status,
-			"* ⧼fooBar!⧽\n* ⧼fooBar2!⧽\n",
-			"(wrap-long: * (fooBar!)\n* (fooBar2!)\n)",
-			"<ul><li>⧼fooBar!⧽</li>\n<li>⧼fooBar2!⧽</li></ul>\n",
-			"<p>(wrap-long: * (fooBar!)\n</p>\n<ul><li>(fooBar2!)</li></ul>\n<p>)\n</p>",
+			"<ul>\n<li>\n⧼fooBar!⧽\n</li>\n<li>\n⧼fooBar2!⧽\n</li>\n</ul>\n",
+			"(wrap-long: <ul>\n<li>\n(fooBar!)\n</li>\n<li>\n(fooBar2!)\n</li>\n</ul>\n)",
+			"<ul>\n<li>\n⧼fooBar!⧽\n</li>\n<li>\n⧼fooBar2!⧽\n</li>\n</ul>\n",
+			"<p>(wrap-long: </p><ul>\n<li>\n(fooBar!)\n</li>\n<li>\n(fooBar2!)\n</li>\n</ul>\n<p>)\n</p>",
 		];
 
 		$status = new Status();
@@ -394,10 +391,10 @@ class StatusTest extends MediaWikiLangTestCase {
 		$status->warning( new Message( 'fooBar2!' ) );
 		$testCases['2MessageWarnings'] = [
 			$status,
-			"* ⧼fooBar!⧽\n* ⧼fooBar2!⧽\n",
-			"(wrap-long: * (fooBar!: foo, bar)\n* (fooBar2!)\n)",
-			"<ul><li>⧼fooBar!⧽</li>\n<li>⧼fooBar2!⧽</li></ul>\n",
-			"<p>(wrap-long: * (fooBar!: foo, bar)\n</p>\n<ul><li>(fooBar2!)</li></ul>\n<p>)\n</p>",
+			"<ul>\n<li>\n⧼fooBar!⧽\n</li>\n<li>\n⧼fooBar2!⧽\n</li>\n</ul>\n",
+			"(wrap-long: <ul>\n<li>\n(fooBar!: foo, bar)\n</li>\n<li>\n(fooBar2!)\n</li>\n</ul>\n)",
+			"<ul>\n<li>\n⧼fooBar!⧽\n</li>\n<li>\n⧼fooBar2!⧽\n</li>\n</ul>\n",
+			"<p>(wrap-long: </p><ul>\n<li>\n(fooBar!: foo, bar)\n</li>\n<li>\n(fooBar2!)\n</li>\n</ul>\n<p>)\n</p>",
 		];
 
 		return $testCases;
@@ -554,7 +551,7 @@ class StatusTest extends MediaWikiLangTestCase {
 			],
 			'two errors' => [
 				[ [ 'rawmessage_2', 'foo' ], [ 'rawmessage_2', 'bar' ] ],
-				"* foo\n* bar\n",
+				"<ul>\n<li>\nfoo\n</li>\n<li>\nbar\n</li>\n</ul>\n",
 				[],
 			],
 			'unknown subclass' => [
@@ -781,6 +778,9 @@ class StatusTest extends MediaWikiLangTestCase {
 		yield [ $message, $message ];
 		yield [ $message, [ 'foo', 1, 2 ] ];
 		yield [ [ 'foo', 1, 2 ], $message ];
+		$messageWithContext1 = ( new Message( 'foo' ) )->setContext( RequestContext::getMain() );
+		$messageWithContext2 = ( new Message( 'foo' ) )->setContext( RequestContext::getMain() );
+		yield [ $messageWithContext1, $messageWithContext2 ];
 	}
 
 	/**

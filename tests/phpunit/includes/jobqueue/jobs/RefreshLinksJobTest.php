@@ -110,12 +110,12 @@ class RefreshLinksJobTest extends MediaWikiIntegrationTestCase {
 		$parserCache = $this->getServiceContainer()->getParserCache();
 		$parserCache->deleteOptionsKey( $page );
 
-		$this->db->newDeleteQueryBuilder()
+		$this->getDb()->newDeleteQueryBuilder()
 			->deleteFrom( 'pagelinks' )
 			->where( ISQLPlatform::ALL_ROWS )
 			->caller( __METHOD__ )
 			->execute();
-		$this->db->newDeleteQueryBuilder()
+		$this->getDb()->newDeleteQueryBuilder()
 			->deleteFrom( 'categorylinks' )
 			->where( ISQLPlatform::ALL_ROWS )
 			->caller( __METHOD__ )
@@ -126,8 +126,9 @@ class RefreshLinksJobTest extends MediaWikiIntegrationTestCase {
 		$result = $job->run();
 
 		$this->newSelectQueryBuilder()
-			->select( 'pl_title' )
+			->select( 'lt_title' )
 			->from( 'pagelinks' )
+			->join( 'linktarget', null, 'pl_target_id=lt_id' )
 			->where( [ 'pl_from' => $page->getId() ] )
 			->assertFieldValue( 'Kittens' );
 		$this->newSelectQueryBuilder()
@@ -161,12 +162,12 @@ class RefreshLinksJobTest extends MediaWikiIntegrationTestCase {
 		$parserCache->deleteOptionsKey( $page1 );
 		$parserCache->deleteOptionsKey( $page2 );
 
-		$this->db->newDeleteQueryBuilder()
+		$this->getDb()->newDeleteQueryBuilder()
 			->deleteFrom( 'pagelinks' )
 			->where( ISQLPlatform::ALL_ROWS )
 			->caller( __METHOD__ )
 			->execute();
-		$this->db->newDeleteQueryBuilder()
+		$this->getDb()->newDeleteQueryBuilder()
 			->deleteFrom( 'categorylinks' )
 			->where( ISQLPlatform::ALL_ROWS )
 			->caller( __METHOD__ )
@@ -180,8 +181,9 @@ class RefreshLinksJobTest extends MediaWikiIntegrationTestCase {
 		$job->run();
 
 		$this->newSelectQueryBuilder()
-			->select( 'pl_title' )
+			->select( 'lt_title' )
 			->from( 'pagelinks' )
+			->join( 'linktarget', null, 'pl_target_id=lt_id' )
 			->where( [ 'pl_from' => $page1->getId() ] )
 			->assertFieldValue( 'Kittens' );
 		$this->newSelectQueryBuilder()
@@ -190,8 +192,9 @@ class RefreshLinksJobTest extends MediaWikiIntegrationTestCase {
 			->where( [ 'cl_from' => $page1->getId() ] )
 			->assertFieldValue( 'Goats' );
 		$this->newSelectQueryBuilder()
-			->select( 'pl_title' )
+			->select( 'lt_title' )
 			->from( 'pagelinks' )
+			->join( 'linktarget', null, 'pl_target_id=lt_id' )
 			->where( [ 'pl_from' => $page2->getId() ] )
 			->assertFieldValue( 'Dogs' );
 		$this->newSelectQueryBuilder()

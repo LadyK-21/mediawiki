@@ -24,11 +24,12 @@ use CacheTime;
 use InvalidArgumentException;
 use LogicException;
 use MediaWiki\Edit\ParsoidRenderID;
-use MediaWiki\Json\JsonUnserializable;
-use MediaWiki\Json\JsonUnserializableTrait;
-use MediaWiki\Json\JsonUnserializer;
+use MediaWiki\Json\JsonDeserializable;
+use MediaWiki\Json\JsonDeserializableTrait;
+use MediaWiki\Json\JsonDeserializer;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Converter;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Parser\Parsoid\PageBundleParserOutputConverter;
 use MediaWiki\Title\Title;
@@ -37,6 +38,7 @@ use ParserOptions;
 use UnexpectedValueException;
 use Wikimedia\Bcp47Code\Bcp47Code;
 use Wikimedia\Bcp47Code\Bcp47CodeValue;
+use Wikimedia\Message\MessageValue;
 use Wikimedia\Parsoid\Core\ContentMetadataCollector;
 use Wikimedia\Parsoid\Core\ContentMetadataCollectorCompat;
 use Wikimedia\Parsoid\Core\LinkTarget as ParsoidLinkTarget;
@@ -94,7 +96,7 @@ use Wikimedia\Reflection\GhostFieldAccessTrait;
  */
 class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	use GhostFieldAccessTrait;
-	use JsonUnserializableTrait;
+	use JsonDeserializableTrait;
 	// This is used to break cyclic dependencies and allow a measure
 	// of compatibility when new methods are added to ContentMetadataCollector
 	// by Parsoid.
@@ -977,15 +979,33 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 
 	/**
 	 * Add a warning to the output for this page.
+	 * @param MessageValue $mv Note that the parameters must be serializable/deserializable
+	 *   with JsonCodec; see the @note on ParserOutput::setExtensionData(). MessageValue guarantees
+	 *   that unless the deprecated ParamType::OBJECT or the ->objectParams() method is used.
+	 * @since 1.43
+	 */
+	public function addWarningMsgVal( MessageValue $mv ) {
+		$m = ( new Converter() )->convertMessageValue( $mv );
+		// These can eventually be stored as MessageValue instead of converting to Message.
+		$this->addWarningMsg( $m->getKey(), ...$m->getParams() );
+	}
+
+	/**
+	 * Add a warning to the output for this page.
 	 * @param string $msg The localization message key for the warning
-	 * @param mixed|JsonUnserializable ...$args Optional arguments for the
-	 *   message. These arguments must be serializable/unserializable with
+	 * @param mixed|JsonDeserializable ...$args Optional arguments for the
+	 *   message. These arguments must be serializable/deserializable with
 	 *   JsonCodec; see the @note on ParserOutput::setExtensionData()
 	 * @since 1.38
 	 */
 	public function addWarningMsg( string $msg, ...$args ): void {
+		// MessageValue objects are defined in core and thus not visible
+		// to Parsoid or to its ContentMetadataCollector interface.
+		// Eventually this method (defined in ContentMetadataCollector) should
+		// call ::addWarningMsgVal() instead of the other way around.
+
 		// preserve original arguments in $mWarningMsgs to allow merge
-		// @todo: these aren't serialized/unserialized yet -- before we
+		// @todo: these aren't serialized/deserialized yet -- before we
 		// turn on serialization of $this->mWarningMsgs we need to ensure
 		// callers aren't passing nonserializable arguments: T343048.
 		$jsonCodec = MediaWikiServices::getInstance()->getJsonCodec();
@@ -1824,7 +1844,7 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	 *    $parser->getOutput()->my_ext_foo = '...';
 	 * @endcode
 	 *
-	 * @note Only scalar values, e.g. numbers, strings, arrays or MediaWiki\Json\JsonUnserializable
+	 * @note Only scalar values, e.g. numbers, strings, arrays or MediaWiki\Json\JsonDeserializable
 	 * instances are supported as a value. Attempt to set other class instance as extension data
 	 * will break ParserCache for the page.
 	 *
@@ -1837,7 +1857,7 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	 * @param string $key The key for accessing the data. Extensions should take care to avoid
 	 *   conflicts in naming keys. It is suggested to use the extension's name as a prefix.
 	 *
-	 * @param mixed|JsonUnserializable $value The value to set.
+	 * @param mixed|JsonDeserializable $value The value to set.
 	 *   Setting a value to null is equivalent to removing the value.
 	 * @since 1.21
 	 */
@@ -2731,19 +2751,19 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 		return $data;
 	}
 
-	public static function newFromJsonArray( JsonUnserializer $unserializer, array $json ): ParserOutput {
+	public static function newFromJsonArray( JsonDeserializer $deserializer, array $json ): ParserOutput {
 		$parserOutput = new ParserOutput();
-		$parserOutput->initFromJson( $unserializer, $json );
+		$parserOutput->initFromJson( $deserializer, $json );
 		return $parserOutput;
 	}
 
 	/**
 	 * Initialize member fields from an array returned by jsonSerialize().
-	 * @param JsonUnserializer $unserializer
+	 * @param JsonDeserializer $deserializer
 	 * @param array $jsonData
 	 */
-	protected function initFromJson( JsonUnserializer $unserializer, array $jsonData ): void {
-		parent::initFromJson( $unserializer, $jsonData );
+	protected function initFromJson( JsonDeserializer $deserializer, array $jsonData ): void {
+		parent::initFromJson( $deserializer, $jsonData );
 
 		// WARNING: When changing how this class is serialized, follow the instructions
 		// at <https://www.mediawiki.org/wiki/Manual:Parser_cache/Serialization_compatibility>!

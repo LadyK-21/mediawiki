@@ -314,25 +314,17 @@ class DatabaseMySQL extends Database {
 	}
 
 	public function tableExists( $table, $fname = __METHOD__ ) {
-		$components = $this->platform->qualifiedTableComponents( $table );
-		if ( count( $components ) === 1 ) {
-			$db = $this->currentDomain->getDatabase();
-			$tableName = $components[0];
-		} elseif ( count( $components ) === 2 ) {
-			[ $db, $tableName ] = $components;
-		} else {
-			throw new DBLanguageError( 'Too many table components' );
-		}
-
-		if ( isset( $this->sessionTempTables[$tableName] ) ) {
+		[ $db, $pt ] = $this->platform->getDatabaseAndTableIdentifier( $table );
+		if ( isset( $this->sessionTempTables[$db][$pt] ) ) {
 			return true; // already known to exist and won't be found in the query anyway
 		}
+
 		return (bool)$this->newSelectQueryBuilder()
 			->select( '1' )
 			->from( 'information_schema.tables' )
 			->where( [
 				'table_schema' => $db,
-				'table_name' => $tableName,
+				'table_name' => $pt,
 			] )
 			->caller( $fname )
 			->fetchField();
@@ -358,15 +350,6 @@ class DatabaseMySQL extends Database {
 		return $res->getInternalFieldInfo( $field );
 	}
 
-	/**
-	 * Get information about an index into an object
-	 * Returns false if the index does not exist
-	 *
-	 * @param string $table
-	 * @param string $index
-	 * @param string $fname
-	 * @return bool|array|null False or null on failure
-	 */
 	public function indexInfo( $table, $index, $fname = __METHOD__ ) {
 		# https://dev.mysql.com/doc/mysql/en/SHOW_INDEX.html
 		$index = $this->platform->indexName( $index );
@@ -377,19 +360,13 @@ class DatabaseMySQL extends Database {
 		);
 		$res = $this->query( $query, $fname );
 
-		if ( !$res ) {
-			return null;
-		}
-
-		$result = [];
-
 		foreach ( $res as $row ) {
-			if ( $row->Key_name == $index ) {
-				$result[] = $row;
+			if ( $row->Key_name === $index ) {
+				return [ 'unique' => !$row->Non_unique ];
 			}
 		}
 
-		return $result ?: false;
+		return false;
 	}
 
 	/**
@@ -582,16 +559,6 @@ class DatabaseMySQL extends Database {
 		$this->query( $query, $fname );
 		// Do not count deletions of conflicting rows toward the change count
 		$this->lastQueryAffectedRows = min( $this->lastQueryAffectedRows, count( $rows ) );
-	}
-
-	/**
-	 * Determines if the last failure was due to the database being read-only.
-	 *
-	 * @return bool
-	 */
-	public function wasReadOnlyError() {
-		return $this->lastErrno() == 1223 ||
-			( $this->lastErrno() == 1290 && strpos( $this->lastError(), '--read-only' ) !== false );
 	}
 
 	protected function isConnectionError( $errno ) {

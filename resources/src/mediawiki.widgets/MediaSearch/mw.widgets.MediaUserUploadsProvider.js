@@ -20,7 +20,7 @@
 	mw.widgets.MediaUserUploadsProvider = function MwWidgetsMediaUserUploadsProvider( apiurl, config ) {
 		config = config || {};
 
-		config.staticParams = $.extend( {
+		config.staticParams = Object.assign( {
 			generator: 'allimages',
 			gaisort: 'timestamp',
 			gaidir: 'descending'
@@ -57,11 +57,10 @@
 	 * @inheritdoc
 	 */
 	mw.widgets.MediaUserUploadsProvider.prototype.sort = function ( results ) {
-		return results.sort( function ( a, b ) {
+		return results.sort(
 			// timestamps are strings
-			return a.timestamp < b.timestamp ? 1 :
-				( a.timestamp === b.timestamp ? 0 : -1 );
-		} );
+			( a, b ) => a.timestamp < b.timestamp ? 1 : ( a.timestamp === b.timestamp ? 0 : -1 )
+		);
 	};
 
 	/**

@@ -2,7 +2,6 @@
 
 namespace MediaWiki\Rest\Module;
 
-use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
 use LogicException;
 use MediaWiki\Profiler\ProfilingContext;
 use MediaWiki\Rest\BasicAccess\BasicAuthorizerInterface;
@@ -18,10 +17,10 @@ use MediaWiki\Rest\ResponseFactory;
 use MediaWiki\Rest\ResponseInterface;
 use MediaWiki\Rest\Router;
 use MediaWiki\Rest\Validator\Validator;
-use NullStatsdDataFactory;
 use Throwable;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\ObjectFactory\ObjectFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * A REST module represents a collection of endpoints.
@@ -46,7 +45,7 @@ abstract class Module {
 	private ErrorReporter $errorReporter;
 	private Router $router;
 
-	private StatsdDataFactoryInterface $stats;
+	private StatsFactory $stats;
 	private ?CorsUtils $cors = null;
 
 	/**
@@ -75,7 +74,7 @@ abstract class Module {
 		$this->restValidator = $restValidator;
 		$this->errorReporter = $errorReporter;
 
-		$this->stats = new NullStatsdDataFactory();
+		$this->stats = StatsFactory::newNull();
 	}
 
 	public function getPathPrefix(): string {
@@ -165,8 +164,13 @@ abstract class Module {
 			);
 		}
 
+		// For backwards compatibility only. Handlers should get the path by
+		// calling getPath(), not from the config array.
+		$config = $match['config'] ?? [];
+		$config['path'] ??= $match['path'];
+
 		// Provide context about the module
-		$handler->initContext( $this, $match['config'] ?? [] );
+		$handler->initContext( $this, $match['path'], $config );
 
 		// Inject services and state from the router
 		$this->getRouter()->prepareHandler( $handler );
@@ -194,19 +198,19 @@ abstract class Module {
 	 * @param string $requestMethod
 	 *
 	 * @return array<string,mixed>
-	 *         - bool found: Whether a match was found. If true, the `handler`
+	 *         - bool "found": Whether a match was found. If true, the `handler`
 	 *           or `spec` field must be set.
-	 *         - Handler handler: the Handler object to use. Either handler or
-	 *           spec must be given.
-	 *         - array spec: an object spec for use with instantiateHandlerObject()
-	 *         - array config: the route config, to be passed to Handler::initContext()
-	 *         - string path: the path the handler is responsible for,
+	 *         - Handler handler: the Handler object to use. Either "handler" or
+	 *           "spec" must be given.
+	 *         - array "spec":" an object spec for use with ObjectFactory
+	 *         - array "config": the route config, to be passed to Handler::initContext()
+	 *         - string "path": the path the handler is responsible for,
 	 *           including placeholders for path parameters.
-	 *         - string[] params: path parameters, to be passed the
+	 *         - string[] "params": path parameters, to be passed the
 	 *           Request::setPathPrams()
-	 *         - string[] methods: supported methods, if the path is known but
-	 *           the method did not match. Only meaningful if `found` is false.
-	 *           To be returned in the Allow header of a 405 response and included
+	 *         - string[] "methods": supported methods, if the path is known but
+	 *           the method did not match. Only meaningful if "found" is false.
+	 *           To be used in the Allow header of a 405 response and included
 	 *           in CORS pre-flight.
 	 */
 	abstract protected function findHandlerMatch(
@@ -282,10 +286,15 @@ abstract class Module {
 		ResponseInterface $response,
 		float $startTime
 	) {
-		$microtime = ( microtime( true ) - $startTime ) * 1000;
+		$latency = ( microtime( true ) - $startTime ) * 1000;
 
 		// NOTE: The "/" prefix is for consistency with old logs. It's rather ugly.
-		$pathForMetrics = '/' . $this->getPathPrefix();
+		$pathForMetrics = $this->getPathPrefix();
+
+		if ( $pathForMetrics !== '' ) {
+			$pathForMetrics = '/' . $pathForMetrics;
+		}
+
 		$pathForMetrics .= $handler ? $handler->getPath() : '/UNKNOWN';
 
 		// Replace any characters that may have a special meaning in the metrics DB.
@@ -295,13 +304,20 @@ abstract class Module {
 		$requestMethod = $request->getMethod();
 		if ( $statusCode >= 400 ) {
 			// count how often we return which error code
-			$this->stats->increment( "rest_api_errors.$pathForMetrics.$requestMethod.$statusCode" );
+			$this->stats->getCounter( 'rest_api_errors_total' )
+				->setLabel( 'path', $pathForMetrics )
+				->setLabel( 'method', $requestMethod )
+				->setLabel( 'status', "$statusCode" )
+				->copyToStatsdAt( [ "rest_api_errors.$pathForMetrics.$requestMethod.$statusCode" ] )
+				->increment();
 		} else {
 			// measure how long it takes to generate a response
-			$this->stats->timing(
-				"rest_api_latency.$pathForMetrics.$requestMethod.$statusCode",
-				$microtime
-			);
+			$this->stats->getTiming( 'rest_api_latency_seconds' )
+				->setLabel( 'path', $pathForMetrics )
+				->setLabel( 'method', $requestMethod )
+				->setLabel( 'status', "$statusCode" )
+				->copyToStatsdAt( "rest_api_latency.$pathForMetrics.$requestMethod.$statusCode" )
+				->observe( $latency );
 		}
 	}
 
@@ -387,11 +403,11 @@ abstract class Module {
 	/**
 	 * @internal for use by Router
 	 *
-	 * @param StatsdDataFactoryInterface $stats
+	 * @param StatsFactory $stats
 	 *
 	 * @return self
 	 */
-	public function setStats( StatsdDataFactoryInterface $stats ): self {
+	public function setStats( StatsFactory $stats ): self {
 		$this->stats = $stats;
 
 		return $this;
@@ -415,14 +431,12 @@ abstract class Module {
 		$json = file_get_contents( $fileName );
 		if ( $json === false ) {
 			throw new ModuleConfigurationException(
-				"Failed to route file `$fileName`"
+				"Failed to load file `$fileName`"
 			);
 		}
 
-		$spec = json_decode(
-			$json,
-			true
-		);
+		$spec = json_decode( $json, true );
+
 		if ( !is_array( $spec ) ) {
 			throw new ModuleConfigurationException(
 				"Failed to parse `$fileName` as a JSON object"

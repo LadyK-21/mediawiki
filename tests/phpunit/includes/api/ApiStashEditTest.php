@@ -10,9 +10,9 @@ use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserRigorOptions;
-use NullStatsdDataFactory;
 use Psr\Log\NullLogger;
 use stdClass;
+use Wikimedia\Stats\StatsFactory;
 use Wikimedia\TestingAccessWrapper;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 use WikitextContent;
@@ -42,7 +42,7 @@ class ApiStashEditTest extends ApiTestCase {
 			new HashBagOStuff( [] ),
 			$this->getServiceContainer()->getConnectionProvider(),
 			new NullLogger(),
-			new NullStatsdDataFactory(),
+			StatsFactory::newNull(),
 			$this->getServiceContainer()->getUserEditTracker(),
 			$this->getServiceContainer()->getUserFactory(),
 			$this->getServiceContainer()->getWikiPageFactory(),
@@ -460,11 +460,11 @@ class ApiStashEditTest extends ApiTestCase {
 		$this->markTestSkipped();
 
 		$key = $this->getStashKey();
-		$this->db->lock( $key, __METHOD__, 0 );
+		$this->getDb()->lock( $key, __METHOD__, 0 );
 		try {
 			$this->doStash( [], null, 'busy' );
 		} finally {
-			$this->db->unlock( $key, __METHOD__ );
+			$this->getDb()->unlock( $key, __METHOD__ );
 		}
 	}
 }

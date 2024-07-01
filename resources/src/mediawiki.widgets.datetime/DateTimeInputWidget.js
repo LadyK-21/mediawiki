@@ -44,7 +44,7 @@
 	 */
 	mw.widgets.datetime.DateTimeInputWidget = function MwWidgetsDatetimeDateTimeInputWidget( config ) {
 		// Configuration initialization
-		config = $.extend( {
+		config = Object.assign( {
 			type: 'datetime',
 			clearable: true,
 			required: false,
@@ -128,7 +128,7 @@
 		if ( this.type === 'time' || config.calendar === null ) {
 			this.calendar = null;
 		} else {
-			config.calendar = $.extend( {}, config.calendar, {
+			config.calendar = Object.assign( {}, config.calendar, {
 				formatter: this.formatter,
 				widget: this,
 				min: this.min,
@@ -168,6 +168,11 @@
 			.append( this.$handle );
 
 		if ( this.calendar ) {
+			const date = this.getValueAsDate();
+			this.calendar.setSelected( date );
+			if ( date ) {
+				this.calendar.setFocusedDate( date );
+			}
 			this.$element.append( this.calendar.$element );
 		}
 	};
@@ -218,7 +223,6 @@
 
 		let date;
 
-		// eslint-disable-next-line security/detect-unsafe-regex
 		const m = /^(\d{4,})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/.exec( value );
 		if ( m ) {
 			if ( m[ 7 ] ) {
@@ -602,7 +606,7 @@
 	 * @private
 	 * @param {jQuery} $field
 	 * @param {jQuery.Event} e Key down event
-	 * @return {boolean} False to cancel the default event
+	 * @return {boolean|undefined} False to cancel the default event
 	 */
 	mw.widgets.datetime.DateTimeInputWidget.prototype.onFieldKeyDown = function ( $field, e ) {
 		const spec = $field.data( 'mw-widgets-datetime-dateTimeInputWidget-fieldSpec' );
@@ -726,7 +730,7 @@
 	 * @private
 	 * @param {jQuery} $field
 	 * @param {jQuery.Event} e Change event
-	 * @return {boolean} False to cancel the default event
+	 * @return {boolean|undefined} False to cancel the default event
 	 */
 	mw.widgets.datetime.DateTimeInputWidget.prototype.onFieldWheel = function ( $field, e ) {
 		let delta = 0;

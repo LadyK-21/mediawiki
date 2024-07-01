@@ -29,6 +29,18 @@ use WikitextContent;
  * @internal for use by core REST infrastructure
  */
 class PageContentHelper {
+
+	/**
+	 * The maximum cache duration for page content.
+	 *
+	 * If this is set to a value higher than about 60 seconds, active purging
+	 * will have to be employed to make sure clients do not receive overly stale
+	 * content. This is especially important to avoid distributing vandalized
+	 * content for too long.
+	 *
+	 * Active purging can be enabled by adding the relevant URLs to
+	 * HTMLCacheUpdater. See T365630 for more discussion.
+	 */
 	private const MAX_AGE_200 = 5;
 
 	/**
@@ -39,17 +51,10 @@ class PageContentHelper {
 		MainConfigNames::RightsText,
 	];
 
-	/** @var ServiceOptions */
-	protected $options;
-
-	/** @var RevisionLookup */
-	protected $revisionLookup;
-
-	/** @var TitleFormatter */
-	protected $titleFormatter;
-
-	/** @var PageLookup */
-	protected $pageLookup;
+	protected ServiceOptions $options;
+	protected RevisionLookup $revisionLookup;
+	protected TitleFormatter $titleFormatter;
+	protected PageLookup $pageLookup;
 
 	/** @var Authority|null */
 	protected $authority = null;
@@ -66,12 +71,6 @@ class PageContentHelper {
 	/** @var PageIdentity|false|null */
 	private $pageIdentity = false;
 
-	/**
-	 * @param ServiceOptions $options
-	 * @param RevisionLookup $revisionLookup
-	 * @param TitleFormatter $titleFormatter
-	 * @param PageLookup $pageLookup
-	 */
 	public function __construct(
 		ServiceOptions $options,
 		RevisionLookup $revisionLookup,

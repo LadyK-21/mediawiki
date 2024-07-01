@@ -1893,12 +1893,6 @@ $wgUseXssLanguage = null;
 $wgLoginLanguageSelector = null;
 
 /**
- * Config variable stub for the ExperimentalLoginPopup setting, for use by phpdoc and IDEs.
- * @see MediaWiki\MainConfigSchema::ExperimentalLoginPopup
- */
-$wgExperimentalLoginPopup = null;
-
-/**
  * Config variable stub for the ForceUIMsgAsContentMsg setting, for use by phpdoc and IDEs.
  * @see MediaWiki\MainConfigSchema::ForceUIMsgAsContentMsg
  */
@@ -4220,6 +4214,12 @@ $wgAllowedCorsHeaders = null;
 $wgRestAPIAdditionalRouteFiles = null;
 
 /**
+ * Config variable stub for the RestSandboxSpecs setting, for use by phpdoc and IDEs.
+ * @see MediaWiki\MainConfigSchema::RestSandboxSpecs
+ */
+$wgRestSandboxSpecs = null;
+
+/**
  * Config variable stub for the MaxShellMemory setting, for use by phpdoc and IDEs.
  * @see MediaWiki\MainConfigSchema::MaxShellMemory
  */
@@ -4446,3 +4446,9 @@ $wgUseCodexSpecialBlock = null;
  * @see MediaWiki\MainConfigSchema::ShowLogoutConfirmation
  */
 $wgShowLogoutConfirmation = null;
+
+/**
+ * Config variable stub for the EnableProtectionIndicators setting, for use by phpdoc and IDEs.
+ * @see MediaWiki\MainConfigSchema::EnableProtectionIndicators
+ */
+$wgEnableProtectionIndicators = null;

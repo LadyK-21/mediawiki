@@ -9,7 +9,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxIcon-rtl.css"
+      "Icon-rtl.css"
     ]
   },
   "__plugin-vue_export-helper.js": {
@@ -23,6 +23,10 @@
   "_constants.js": {
     "file": "constants.js",
     "name": "constants"
+  },
+  "_floating-ui.dom.js": {
+    "file": "floating-ui.dom.js",
+    "name": "floating-ui.dom"
   },
   "_useIconOnlyButton.js": {
     "file": "useIconOnlyButton.js",
@@ -55,7 +59,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxAccordion-rtl.css"
+      "CdxAccordion-rtl.css"
     ]
   },
   "src/components/button-group/ButtonGroup.vue": {
@@ -70,7 +74,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxButtonGroup-rtl.css"
+      "CdxButtonGroup-rtl.css"
     ]
   },
   "src/components/button/Button.vue": {
@@ -84,7 +88,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxButton-rtl.css"
+      "CdxButton-rtl.css"
     ]
   },
   "src/components/card/Card.vue": {
@@ -98,7 +102,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxCard-rtl.css"
+      "CdxCard-rtl.css"
     ]
   },
   "src/components/checkbox/Checkbox.vue": {
@@ -116,7 +120,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxCheckbox-rtl.css"
+      "CdxCheckbox-rtl.css"
     ]
   },
   "src/components/chip-input/ChipInput.vue": {
@@ -134,7 +138,7 @@
       "src/composables/useComputedDirection.ts"
     ],
     "css": [
-      "CdxCdxChipInput-rtl.css"
+      "CdxChipInput-rtl.css"
     ]
   },
   "src/components/combobox/Combobox.vue": {
@@ -156,7 +160,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxCombobox-rtl.css"
+      "CdxCombobox-rtl.css"
     ]
   },
   "src/components/dialog/Dialog.vue": {
@@ -172,7 +176,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxDialog-rtl.css"
+      "CdxDialog-rtl.css"
     ]
   },
   "src/components/field/Field.vue": {
@@ -189,7 +193,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxField-rtl.css"
+      "CdxField-rtl.css"
     ]
   },
   "src/components/icon/Icon.vue": {
@@ -213,7 +217,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxInfoChip-rtl.css"
+      "CdxInfoChip-rtl.css"
     ]
   },
   "src/components/label/Label.vue": {
@@ -228,7 +232,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxLabel-rtl.css"
+      "CdxLabel-rtl.css"
     ]
   },
   "src/components/lookup/Lookup.vue": {
@@ -248,7 +252,26 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxLookup-rtl.css"
+      "CdxLookup-rtl.css"
+    ]
+  },
+  "src/components/menu-button/MenuButton.vue": {
+    "file": "CdxMenuButton.cjs",
+    "name": "CdxMenuButton",
+    "src": "src/components/menu-button/MenuButton.vue",
+    "isEntry": true,
+    "imports": [
+      "src/components/toggle-button/ToggleButton.vue",
+      "src/components/menu/Menu.vue",
+      "src/composables/useFieldData.ts",
+      "src/composables/useFloatingMenu.ts",
+      "src/composables/useGeneratedId.ts",
+      "src/composables/useModelWrapper.ts",
+      "src/composables/useSplitAttributes.ts",
+      "__plugin-vue_export-helper.js"
+    ],
+    "css": [
+      "CdxMenuButton-rtl.css"
     ]
   },
   "src/components/menu-item/MenuItem.vue": {
@@ -263,7 +286,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxMenuItem-rtl.css"
+      "CdxMenuItem-rtl.css"
     ]
   },
   "src/components/menu/Menu.vue": {
@@ -280,7 +303,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxMenu-rtl.css"
+      "CdxMenu-rtl.css"
     ]
   },
   "src/components/message/Message.vue": {
@@ -295,7 +318,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxMessage-rtl.css"
+      "CdxMessage-rtl.css"
     ]
   },
   "src/components/progress-bar/ProgressBar.vue": {
@@ -308,7 +331,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxProgressBar-rtl.css"
+      "CdxProgressBar-rtl.css"
     ]
   },
   "src/components/radio/Radio.vue": {
@@ -325,7 +348,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxRadio-rtl.css"
+      "CdxRadio-rtl.css"
     ]
   },
   "src/components/search-input/SearchInput.vue": {
@@ -344,7 +367,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxSearchInput-rtl.css"
+      "CdxSearchInput-rtl.css"
     ]
   },
   "src/components/search-result-title/SearchResultTitle.vue": {
@@ -356,7 +379,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxSearchResultTitle-rtl.css"
+      "CdxSearchResultTitle-rtl.css"
     ]
   },
   "src/components/select/Select.vue": {
@@ -376,7 +399,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxSelect-rtl.css"
+      "CdxSelect-rtl.css"
     ]
   },
   "src/components/tab/Tab.vue": {
@@ -389,7 +412,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxTab-rtl.css"
+      "CdxTab-rtl.css"
     ]
   },
   "src/components/table/Table.vue": {
@@ -405,7 +428,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxTable-rtl.css"
+      "CdxTable-rtl.css"
     ]
   },
   "src/components/tabs/Tabs.vue": {
@@ -426,7 +449,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxTabs-rtl.css"
+      "CdxTabs-rtl.css"
     ]
   },
   "src/components/text-area/TextArea.vue": {
@@ -443,7 +466,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxTextArea-rtl.css"
+      "CdxTextArea-rtl.css"
     ]
   },
   "src/components/text-input/TextInput.vue": {
@@ -460,7 +483,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxTextInput-rtl.css"
+      "CdxTextInput-rtl.css"
     ]
   },
   "src/components/thumbnail/Thumbnail.vue": {
@@ -474,7 +497,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxThumbnail-rtl.css"
+      "CdxThumbnail-rtl.css"
     ]
   },
   "src/components/toggle-button-group/ToggleButtonGroup.vue": {
@@ -489,7 +512,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxToggleButtonGroup-rtl.css"
+      "CdxToggleButtonGroup-rtl.css"
     ]
   },
   "src/components/toggle-button/ToggleButton.vue": {
@@ -502,7 +525,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxToggleButton-rtl.css"
+      "CdxToggleButton-rtl.css"
     ]
   },
   "src/components/toggle-switch/ToggleSwitch.vue": {
@@ -520,7 +543,20 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxToggleSwitch-rtl.css"
+      "CdxToggleSwitch-rtl.css"
+    ]
+  },
+  "src/components/tooltip/Tooltip.ts": {
+    "file": "CdxTooltip.cjs",
+    "name": "CdxTooltip",
+    "src": "src/components/tooltip/Tooltip.ts",
+    "isEntry": true,
+    "imports": [
+      "src/composables/useGeneratedId.ts",
+      "_floating-ui.dom.js"
+    ],
+    "css": [
+      "CdxTooltip-rtl.css"
     ]
   },
   "src/components/typeahead-search/TypeaheadSearch.vue": {
@@ -538,7 +574,7 @@
       "__plugin-vue_export-helper.js"
     ],
     "css": [
-      "CdxCdxTypeaheadSearch-rtl.css"
+      "CdxTypeaheadSearch-rtl.css"
     ]
   },
   "src/composables/useComputedDirection.ts": {
@@ -576,7 +612,10 @@
     "file": "useFloatingMenu.cjs",
     "name": "useFloatingMenu",
     "src": "src/composables/useFloatingMenu.ts",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_floating-ui.dom.js"
+    ]
   },
   "src/composables/useGeneratedId.ts": {
     "file": "useGeneratedId.cjs",

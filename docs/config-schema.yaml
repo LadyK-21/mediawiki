@@ -1985,18 +1985,15 @@ config-schema:
              [ 'centralauth' => [ 'db' => 'centralauth' ] ]
             @since 1.41
     PageLinksSchemaMigrationStage:
-        default: 769
+        default: 768
         type: integer
         description: |-
             Pagelinks table schema migration stage, for normalizing pl_namespace and pl_title fields.
             Use the SCHEMA_COMPAT_XXX flags. Supported values:
-              - SCHEMA_COMPAT_WRITE_OLD | SCHEMA_COMPAT_READ_OLD (SCHEMA_COMPAT_OLD)
-              - SCHEMA_COMPAT_WRITE_BOTH | SCHEMA_COMPAT_READ_OLD
-              - SCHEMA_COMPAT_WRITE_BOTH | SCHEMA_COMPAT_READ_NEW
               - SCHEMA_COMPAT_WRITE_NEW | SCHEMA_COMPAT_READ_NEW (SCHEMA_COMPAT_NEW)
             History:
               - 1.41: Added
-              - 1.43: Default has changed to SCHEMA_COMPAT_WRITE_BOTH | SCHEMA_COMPAT_READ_NEW.
+              - 1.43: Default has changed to SCHEMA_COMPAT_NEW.
     ExternalLinksDomainGaps:
         default: {  }
         type: object
@@ -3087,11 +3084,6 @@ config-schema:
             Show a bar of language selection links in the user login and user
             registration forms; edit the "loginlanguagelinks" message to
             customise these.
-    ExperimentalLoginPopup:
-        default: false
-        description: |-
-            Add extra login links that open different kinds of modal dialogs instead of navigating the page.
-            As of May 2024, this config option is experimental and may be removed or changed in the future.
     ForceUIMsgAsContentMsg:
         default: {  }
         type: object
@@ -4586,7 +4578,7 @@ config-schema:
             pbkdf2-legacyA: { class: MediaWiki\Password\LayeredParameterizedPassword, types: [A, pbkdf2] }
             pbkdf2-legacyB: { class: MediaWiki\Password\LayeredParameterizedPassword, types: [B, pbkdf2] }
             bcrypt: { class: MediaWiki\Password\BcryptPassword, cost: 9 }
-            pbkdf2: { factory: [MediaWiki\Password\AbstractPbkdf2Password, newInstance], algo: sha512, cost: '30000', length: '64' }
+            pbkdf2: { class: MediaWiki\Password\Pbkdf2PasswordUsingOpenSSL, algo: sha512, cost: '30000', length: '64' }
             argon2: { class: MediaWiki\Password\Argon2Password, algo: auto }
         type: object
         description: |-
@@ -4833,6 +4825,7 @@ config-schema:
             or function outside of Wikimedia Foundation wikis.
     AutoCreateTempUser:
         properties:
+            known: { type: boolean, default: false }
             enabled: { type: boolean, default: false }
             actions: { type: array, default: [edit] }
             genPattern: { type: string, default: ~$1 }
@@ -4840,7 +4833,7 @@ config-schema:
             reservedPattern: { type: [string, 'null'], default: ~$1 }
             serialProvider: { type: object, default: { type: local, useYear: true } }
             serialMapping: { type: object, default: { type: plain-numeric } }
-            expireAfterDays: { type: [integer, 'null'], default: 365 }
+            expireAfterDays: { type: [integer, 'null'], default: 90 }
             notifyBeforeExpirationDays: { type: [integer, 'null'], default: 10 }
         type: object
         description: |-
@@ -4849,7 +4842,15 @@ config-schema:
             do not explicitly create an account.
             @warning This is EXPERIMENTAL, enabling may break extensions.
             An associative array with the following keys:
-              - enabled: (bool) Whether auto-creation is enabled.
+              - known: (bool) Whether auto-creation is known about. Set this to 'true' if
+                temp accounts have been created on this wiki already. This setting allows
+                temp users to be recognized even if auto-creation is currently disabled.
+                If auto-creation is enabled via the 'enabled' property, then 'known' is
+                overriden to true.
+              - enabled: (bool) Whether auto-creation is enabled. If changing this
+                value from 'true' to 'false', you should also set 'known' to true, so
+                that relevant code can continue to identify temporary accounts as
+                visually and conceptually distinct from anonymous accounts and named accounts.
               - actions: (array) A list of actions for which the feature is enabled.
                 Currently only "edit" is supported.
               - genPattern: (string) The pattern used when generating new usernames.
@@ -4893,7 +4894,7 @@ config-schema:
                   - uppercase: (bool) With "filtered-radix", whether to use uppercase
                     letters, default false.
                   - offset: (int) With "plain-numeric", a constant to add to the stored index.
-               - expireAfterDays: (int|null, default 365) If not null, how many days should the temporary
+               - expireAfterDays: (int|null, default 90) If not null, how many days should the temporary
                  accounts expire? Requires expireTemporaryAccounts.php to be periodically executed in
                  order to work.
                - notifyBeforeExpirationDays: (int|null, default 10) If not null, how many days before the
@@ -5606,7 +5607,7 @@ config-schema:
             basic: { autocreateaccount: true, autoconfirmed: true, autopatrol: true, editsemiprotected: true, ipblock-exempt: true, nominornewtalk: true, patrolmarks: true, read: true, writeapi: true, unwatchedpages: true }
             highvolume: { bot: true, apihighlimits: true, noratelimit: true, markbotedits: true }
             import: { import: true, importupload: true }
-            editpage: { edit: true, minoredit: true, applychangetags: true, changetags: true, editcontentmodel: true }
+            editpage: { edit: true, minoredit: true, applychangetags: true, changetags: true, editcontentmodel: true, pagelang: true }
             editprotected: { edit: true, minoredit: true, applychangetags: true, changetags: true, editcontentmodel: true, editprotected: true }
             editmycssjs: { edit: true, minoredit: true, applychangetags: true, changetags: true, editcontentmodel: true, editmyusercss: true, editmyuserjson: true, editmyuserjs: true }
             editmyoptions: { editmyoptions: true, editmyuserjson: true }
@@ -7133,7 +7134,7 @@ config-schema:
             revertedTagUpdate: RevertedTagUpdateJob
             'null': NullJob
             userEditCountInit: UserEditCountInitJob
-            parsoidCachePrewarm: { class: ParsoidCachePrewarmJob, services: [ParsoidOutputAccess, PageStore, RevisionLookup, ParsoidSiteConfig], needsPage: false }
+            parsoidCachePrewarm: { class: ParsoidCachePrewarmJob, services: [ParserOutputAccess, PageStore, RevisionLookup, ParsoidSiteConfig], needsPage: false }
             renameUser: { class: MediaWiki\RenameUser\RenameUserJob, services: [MainConfig, DBLoadBalancerFactory] }
         type: object
         description: |-
@@ -7710,6 +7711,24 @@ config-schema:
         description: |-
             Additional REST API Route files.
             A common usage is to enable development/experimental endpoints only on test wikis.
+    RestSandboxSpecs:
+        default: {  }
+        type: object
+        additionalProperties:
+            type: object
+            properties: { url: { type: string, format: url }, name: { type: string }, msg: { type: string, description: 'a message key' } }
+            required: [url]
+        description: |-
+            A list of OpenAPI specs to be made available for exploration on
+            Special:RestSandbox. If none are given, Special:RestSandbox is disabled.
+            This is an associative array, arbitrary spec IDs to spec descriptions.
+            Each spec description is an array with the following keys:
+            - url: the URL that will return the OpenAPI spec.
+            - name: the name of the API, to be shown on Special:RestSandbox.
+              Ignored if msg is given.
+            - msg: a message key for the name of the API, to be shown on
+              Special:RestSandbox.
+            @since 1.43
     MaxShellMemory:
         default: 307200
         description: 'Maximum amount of virtual memory available to shell processes under linux, in KiB.'
@@ -8042,3 +8061,9 @@ config-schema:
             Whether to display a confirmation screen during user log out.
             @unstable Temporary feature flag, T357484
             @since 1.42
+    EnableProtectionIndicators:
+        default: false
+        type: boolean
+        description: |-
+            Whether to show indicators on a page when it is protected.
+            @since 1.43

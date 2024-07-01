@@ -39,8 +39,8 @@
 		mw.widgets.CalendarWidget.super.call( this, config );
 
 		// Mixin constructors
-		OO.ui.mixin.TabIndexedElement.call( this, $.extend( {}, config, { $tabIndexed: this.$element } ) );
-		OO.ui.mixin.ClippableElement.call( this, $.extend( { $clippable: this.$element }, config ) );
+		OO.ui.mixin.TabIndexedElement.call( this, Object.assign( {}, config, { $tabIndexed: this.$element } ) );
+		OO.ui.mixin.ClippableElement.call( this, Object.assign( { $clippable: this.$element }, config ) );
 		OO.ui.mixin.FloatableElement.call( this, config );
 
 		// Flipping implementation derived from MenuSelectWidget
@@ -330,7 +330,7 @@
 			} else if ( fade === 'next' || fade === 'down' ) {
 				this.$body.insertAfter( this.$oldBody );
 			}
-			setTimeout( function () {
+			setTimeout( () => {
 				// The following classes are used here:
 				// * mw-widget-calendarWidget-body-wrapper-fade-up
 				// * mw-widget-calendarWidget-body-wrapper-fade-down
@@ -568,7 +568,7 @@
 	 *
 	 * @private
 	 * @param {jQuery.Event} e Mouse click event
-	 * @return {boolean} False to cancel the default event
+	 * @return {boolean|undefined} False to cancel the default event
 	 */
 	mw.widgets.CalendarWidget.prototype.onClick = function ( e ) {
 		if ( !this.isDisabled() && e.which === 1 ) {
@@ -582,7 +582,7 @@
 	 *
 	 * @private
 	 * @param {jQuery.Event} e Key down event
-	 * @return {boolean} False to cancel the default event
+	 * @return {boolean|undefined} False to cancel the default event
 	 */
 	mw.widgets.CalendarWidget.prototype.onKeyDown = function ( e ) {
 		const

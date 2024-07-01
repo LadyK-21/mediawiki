@@ -1,4 +1,4 @@
-QUnit.module( 'mediawiki.api.options', QUnit.newMwEnvironment(), function ( hooks ) {
+QUnit.module( 'mediawiki.api.options', QUnit.newMwEnvironment(), ( hooks ) => {
 	mw.config.set( {
 		wgUserName: 'Foo'
 	} );
@@ -15,7 +15,7 @@ QUnit.module( 'mediawiki.api.options', QUnit.newMwEnvironment(), function ( hook
 		api.saveOption( 'foo', 'bar' );
 
 		assert.true( stub.calledOnce, '#saveOptions called once' );
-		assert.deepEqual( stub.getCall( 0 ).args, [ { foo: 'bar' } ], '#saveOptions called correctly' );
+		assert.deepEqual( stub.getCall( 0 ).args, [ { foo: 'bar' }, undefined ], '#saveOptions called correctly' );
 	} );
 
 	QUnit.test( 'saveOptions without Unit Separator', async function ( assert ) {
@@ -32,7 +32,7 @@ QUnit.module( 'mediawiki.api.options', QUnit.newMwEnvironment(), function ( hook
 		);
 
 		// Requests are POST, match requestBody instead of url
-		this.server.respond( function ( request ) {
+		this.server.respond( ( request ) => {
 			if ( !request.requestBody ) {
 				// GET request for the token, already responded above
 			} else if ( [
@@ -85,7 +85,7 @@ QUnit.module( 'mediawiki.api.options', QUnit.newMwEnvironment(), function ( hook
 		);
 
 		// Requests are POST, match requestBody instead of url
-		this.server.respond( function ( request ) {
+		this.server.respond( ( request ) => {
 			if ( !request.requestBody ) {
 				// GET request for the token, already responded above
 			} else if ( [

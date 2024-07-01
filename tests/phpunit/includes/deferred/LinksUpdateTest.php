@@ -7,6 +7,7 @@ use MediaWiki\Interwiki\ClassicInterwikiLookup;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\PageIdentityValue;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleValue;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -106,7 +107,7 @@ class LinksUpdateTest extends MediaWikiLangTestCase {
 			$t,
 			$po,
 			'pagelinks',
-			[ 'pl_namespace', 'pl_title' ],
+			[ 'lt_namespace', 'lt_title' ],
 			[ 'pl_from' => self::$testingPageId ],
 			[
 				[ NS_MAIN, 'Bar' ],
@@ -129,7 +130,7 @@ class LinksUpdateTest extends MediaWikiLangTestCase {
 			$t,
 			$po,
 			'pagelinks',
-			[ 'pl_namespace', 'pl_title' ],
+			[ 'lt_namespace', 'lt_title' ],
 			[ 'pl_from' => self::$testingPageId ],
 			[
 				[ NS_MAIN, 'Bar' ],
@@ -154,7 +155,7 @@ class LinksUpdateTest extends MediaWikiLangTestCase {
 			$t,
 			$po,
 			'pagelinks',
-			[ 'pl_namespace', 'pl_title', 'pl_from_namespace' ],
+			[ 'lt_namespace', 'lt_title', 'pl_from_namespace' ],
 			[ 'pl_from' => self::$testingPageId ],
 			[
 				[ NS_MAIN, 'Foo', NS_MAIN ],
@@ -168,7 +169,7 @@ class LinksUpdateTest extends MediaWikiLangTestCase {
 			new PageIdentityValue( 2, 0, "Foo", false ),
 			$po,
 			'pagelinks',
-			[ 'pl_namespace', 'pl_title', 'pl_from_namespace' ],
+			[ 'lt_namespace', 'lt_title', 'pl_from_namespace' ],
 			[ 'pl_from' => self::$testingPageId ],
 			[
 				[ NS_MAIN, 'Foo', NS_USER ],
@@ -581,8 +582,8 @@ class LinksUpdateTest extends MediaWikiLangTestCase {
 			[ 'tl_target_id' ],
 			[ 'tl_from' => self::$testingPageId ],
 			[
-				[ $linkTargetLookup->acquireLinkTargetId( $target1, $this->db ) ],
-				[ $linkTargetLookup->acquireLinkTargetId( $target2, $this->db ) ],
+				[ $linkTargetLookup->acquireLinkTargetId( $target1, $this->getDb() ) ],
+				[ $linkTargetLookup->acquireLinkTargetId( $target2, $this->getDb() ) ],
 			]
 		);
 
@@ -599,8 +600,8 @@ class LinksUpdateTest extends MediaWikiLangTestCase {
 			[ 'tl_target_id' ],
 			[ 'tl_from' => self::$testingPageId ],
 			[
-				[ $linkTargetLookup->acquireLinkTargetId( $target2, $this->db ) ],
-				[ $linkTargetLookup->acquireLinkTargetId( $target3, $this->db ) ],
+				[ $linkTargetLookup->acquireLinkTargetId( $target2, $this->getDb() ) ],
+				[ $linkTargetLookup->acquireLinkTargetId( $target3, $this->getDb() ) ],
 			]
 		);
 	}
@@ -837,11 +838,14 @@ class LinksUpdateTest extends MediaWikiLangTestCase {
 
 		$update->doUpdate();
 
-		$this->newSelectQueryBuilder()
+		$qb = $this->newSelectQueryBuilder()
 			->select( $fields )
 			->from( $table )
-			->where( $condition )
-			->assertResultSet( $expectedRows );
+			->where( $condition );
+		if ( $table === 'pagelinks' ) {
+			$qb->join( 'linktarget', null, 'pl_target_id=lt_id' );
+		}
+		$qb->assertResultSet( $expectedRows );
 		return $update;
 	}
 

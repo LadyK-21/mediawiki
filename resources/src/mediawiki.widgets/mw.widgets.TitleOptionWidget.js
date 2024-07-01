@@ -42,7 +42,7 @@
 		}
 
 		// Config initialization
-		config = $.extend( {
+		config = Object.assign( {
 			icon: icon,
 			label: config.data,
 			autoFitLabel: false,
@@ -65,7 +65,7 @@
 		this.$label.attr( 'tabindex', '-1' );
 
 		// Allow opening the link in new tab, but not regular navigation.
-		this.$label.on( 'click', function ( e ) {
+		this.$label.on( 'click', ( e ) => {
 			// Don't interfere with special clicks (e.g. to open in new tab)
 			if ( !( e.which !== 1 || e.altKey || e.ctrlKey || e.shiftKey || e.metaKey ) ) {
 				e.preventDefault();

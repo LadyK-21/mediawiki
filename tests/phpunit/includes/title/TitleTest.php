@@ -4,6 +4,7 @@ use MediaWiki\Cache\BacklinkCache;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Message\Message;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\PageIdentityValue;
 use MediaWiki\Tests\Unit\DummyServicesTrait;
@@ -758,7 +759,7 @@ class TitleTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testNewFromMissingId() {
 		// Testing return of null for an id that does not exist
-		$maxPageId = (int)$this->db->newSelectQueryBuilder()
+		$maxPageId = (int)$this->getDb()->newSelectQueryBuilder()
 			->select( 'max(page_id)' )
 			->from( 'page' )
 			->caller( __METHOD__ )->fetchField();

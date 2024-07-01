@@ -240,7 +240,7 @@ class UserTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers \User::getRightDescription
+	 * @covers \MediaWiki\User\User::getRightDescription
 	 */
 	public function testGetRightDescription() {
 		$key = 'deletechangetags';
@@ -249,7 +249,7 @@ class UserTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers \User::getRightDescriptionHtml
+	 * @covers \MediaWiki\User\User::getRightDescriptionHtml
 	 */
 	public function testGetParsedRightDescription() {
 		$key = 'deletechangetags';
@@ -721,7 +721,7 @@ class UserTest extends MediaWikiIntegrationTestCase {
 		$user->saveSettings();
 		$this->assertSame(
 			$user->getName(),
-			$this->db->newSelectQueryBuilder()
+			$this->getDb()->newSelectQueryBuilder()
 				->select( 'actor_name' )
 				->from( 'actor' )
 				->where( [ 'actor_id' => $user->getActorId() ] )
@@ -730,12 +730,14 @@ class UserTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$ip = '192.168.12.34';
-		$this->db->newDeleteQueryBuilder()
+		$this->getDb()->newDeleteQueryBuilder()
 			->deleteFrom( 'actor' )
 			->where( [ 'actor_name' => $ip ] )
 			->caller( __METHOD__ )
 			->execute();
 
+		// Next tests require disabling temp user feature.
+		$this->disableAutoCreateTempUser();
 		$user = User::newFromName( $ip, false );
 		$this->assertSame( 0, $user->getActorId(), 'Anonymous user has no actor ID by default' );
 		$this->filterDeprecated( '/Passing parameter of type IDatabase/' );
@@ -786,6 +788,7 @@ class UserTest extends MediaWikiIntegrationTestCase {
 	 * @covers \MediaWiki\User\User::newFromAnyId
 	 */
 	public function testNewFromAnyId() {
+		$this->disableAutoCreateTempUser();
 		// Registered user
 		$user = $this->user;
 		for ( $i = 1; $i <= 7; $i++ ) {
@@ -1254,12 +1257,12 @@ class UserTest extends MediaWikiIntegrationTestCase {
 
 			case 'actor':
 				$name = 'TestNewSystemUser ' . TestUserRegistry::getNextId();
-				$this->db->newInsertQueryBuilder()
+				$this->getDb()->newInsertQueryBuilder()
 					->insertInto( 'actor' )
 					->row( [ 'actor_name' => $name ] )
 					->caller( __METHOD__ )
 					->execute();
-				$actorId = (int)$this->db->insertId();
+				$actorId = (int)$this->getDb()->insertId();
 				break;
 
 			case 'user':
@@ -1642,6 +1645,18 @@ class UserTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
+	 * @covers \MediaWiki\User\User::isTemp
+	 */
+	public function testSetIsTempInLoadDefaults() {
+		$this->enableAutoCreateTempUser();
+		$user = new User();
+		$user->loadDefaults();
+		$this->assertSame( false, $user->isTemp() );
+		$user->loadDefaults( '~2024-1' );
+		$this->assertSame( true, $user->isTemp() );
+	}
+
+	/**
 	 * @covers \MediaWiki\User\User::isNamed
 	 */
 	public function testIsNamed() {
@@ -1677,7 +1692,7 @@ class UserTest extends MediaWikiIntegrationTestCase {
 
 		$user = User::newFromName( $name );
 		$user->addToDatabase();
-		$field = $this->db->newSelectQueryBuilder()
+		$field = $this->getDb()->newSelectQueryBuilder()
 			->select( 'user_is_temp' )
 			->from( 'user' )
 			->where( [ 'user_name' => $name ] )

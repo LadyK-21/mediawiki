@@ -49,13 +49,13 @@ use MediaWiki\Content\JavaScriptContentHandler;
 use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\TextContentHandler;
 use MediaWiki\Deferred\SiteStatsUpdate;
-use MediaWiki\Password\AbstractPbkdf2Password;
 use MediaWiki\Password\Argon2Password;
 use MediaWiki\Password\BcryptPassword;
 use MediaWiki\Password\LayeredParameterizedPassword;
 use MediaWiki\Password\MWOldPassword;
 use MediaWiki\Password\MWSaltedPassword;
 use MediaWiki\Password\PasswordPolicyChecks;
+use MediaWiki\Password\Pbkdf2PasswordUsingOpenSSL;
 use MediaWiki\Permissions\GrantsInfo;
 use MediaWiki\RCFeed\RedisPubSubFeedEngine;
 use MediaWiki\RCFeed\UDPRCFeedEngine;
@@ -3276,17 +3276,14 @@ class MainConfigSchema {
 	 *
 	 * Use the SCHEMA_COMPAT_XXX flags. Supported values:
 	 *
-	 *   - SCHEMA_COMPAT_WRITE_OLD | SCHEMA_COMPAT_READ_OLD (SCHEMA_COMPAT_OLD)
-	 *   - SCHEMA_COMPAT_WRITE_BOTH | SCHEMA_COMPAT_READ_OLD
-	 *   - SCHEMA_COMPAT_WRITE_BOTH | SCHEMA_COMPAT_READ_NEW
 	 *   - SCHEMA_COMPAT_WRITE_NEW | SCHEMA_COMPAT_READ_NEW (SCHEMA_COMPAT_NEW)
 	 *
 	 * History:
 	 *   - 1.41: Added
-	 *   - 1.43: Default has changed to SCHEMA_COMPAT_WRITE_BOTH | SCHEMA_COMPAT_READ_NEW.
+	 *   - 1.43: Default has changed to SCHEMA_COMPAT_NEW.
 	 */
 	public const PageLinksSchemaMigrationStage = [
-		'default' => SCHEMA_COMPAT_WRITE_BOTH | SCHEMA_COMPAT_READ_NEW,
+		'default' => SCHEMA_COMPAT_NEW,
 		'type' => 'integer',
 	];
 
@@ -4970,15 +4967,6 @@ class MainConfigSchema {
 	 * customise these.
 	 */
 	public const LoginLanguageSelector = [
-		'default' => false,
-	];
-
-	/**
-	 * Add extra login links that open different kinds of modal dialogs instead of navigating the page.
-	 *
-	 * As of May 2024, this config option is experimental and may be removed or changed in the future.
-	 */
-	public const ExperimentalLoginPopup = [
 		'default' => false,
 	];
 
@@ -7289,7 +7277,7 @@ class MainConfigSchema {
 				'cost' => 9,
 			],
 			'pbkdf2' => [
-				'factory' => [ AbstractPbkdf2Password::class, 'newInstance' ],
+				'class' => Pbkdf2PasswordUsingOpenSSL::class,
 				'algo' => 'sha512',
 				'cost' => '30000',
 				'length' => '64',
@@ -7631,7 +7619,15 @@ class MainConfigSchema {
 	 *
 	 * An associative array with the following keys:
 	 *
-	 *   - enabled: (bool) Whether auto-creation is enabled.
+	 *   - known: (bool) Whether auto-creation is known about. Set this to 'true' if
+	 *     temp accounts have been created on this wiki already. This setting allows
+	 *     temp users to be recognized even if auto-creation is currently disabled.
+	 *     If auto-creation is enabled via the 'enabled' property, then 'known' is
+	 *     overriden to true.
+	 *   - enabled: (bool) Whether auto-creation is enabled. If changing this
+	 *     value from 'true' to 'false', you should also set 'known' to true, so
+	 *     that relevant code can continue to identify temporary accounts as
+	 *     visually and conceptually distinct from anonymous accounts and named accounts.
 	 *   - actions: (array) A list of actions for which the feature is enabled.
 	 *     Currently only "edit" is supported.
 	 *   - genPattern: (string) The pattern used when generating new usernames.
@@ -7675,7 +7671,7 @@ class MainConfigSchema {
 	 *       - uppercase: (bool) With "filtered-radix", whether to use uppercase
 	 *         letters, default false.
 	 *       - offset: (int) With "plain-numeric", a constant to add to the stored index.
-	 *    - expireAfterDays: (int|null, default 365) If not null, how many days should the temporary
+	 *    - expireAfterDays: (int|null, default 90) If not null, how many days should the temporary
 	 *      accounts expire? Requires expireTemporaryAccounts.php to be periodically executed in
 	 *      order to work.
 	 *    - notifyBeforeExpirationDays: (int|null, default 10) If not null, how many days before the
@@ -7686,6 +7682,7 @@ class MainConfigSchema {
 	 */
 	public const AutoCreateTempUser = [
 		'properties' => [
+			'known' => [ 'type' => 'bool', 'default' => false ],
 			'enabled' => [ 'type' => 'bool', 'default' => false ],
 			'actions' => [ 'type' => 'list', 'default' => [ 'edit' ] ],
 			'genPattern' => [ 'type' => 'string', 'default' => '~$1' ],
@@ -7693,7 +7690,7 @@ class MainConfigSchema {
 			'reservedPattern' => [ 'type' => 'string|null', 'default' => '~$1' ],
 			'serialProvider' => [ 'type' => 'object', 'default' => [ 'type' => 'local', 'useYear' => true ] ],
 			'serialMapping' => [ 'type' => 'object', 'default' => [ 'type' => 'plain-numeric' ] ],
-			'expireAfterDays' => [ 'type' => 'int|null', 'default' => 365 ],
+			'expireAfterDays' => [ 'type' => 'int|null', 'default' => 90 ],
 			'notifyBeforeExpirationDays' => [ 'type' => 'int|null', 'default' => 10 ],
 		],
 		'type' => 'object',
@@ -8890,6 +8887,7 @@ class MainConfigSchema {
 				'applychangetags' => true,
 				'changetags' => true,
 				'editcontentmodel' => true,
+				'pagelang' => true,
 			],
 			'editprotected' => [
 				'edit' => true,
@@ -11433,7 +11431,7 @@ class MainConfigSchema {
 			'parsoidCachePrewarm' => [
 				'class' => ParsoidCachePrewarmJob::class,
 				'services' => [
-					'ParsoidOutputAccess',
+					'ParserOutputAccess',
 					'PageStore',
 					'RevisionLookup',
 					'ParsoidSiteConfig',
@@ -12333,6 +12331,34 @@ class MainConfigSchema {
 		'type' => 'list',
 	];
 
+	/**
+	 * A list of OpenAPI specs to be made available for exploration on
+	 * Special:RestSandbox. If none are given, Special:RestSandbox is disabled.
+	 *
+	 * This is an associative array, arbitrary spec IDs to spec descriptions.
+	 * Each spec description is an array with the following keys:
+	 * - url: the URL that will return the OpenAPI spec.
+	 * - name: the name of the API, to be shown on Special:RestSandbox.
+	 *   Ignored if msg is given.
+	 * - msg: a message key for the name of the API, to be shown on
+	 *   Special:RestSandbox.
+	 *
+	 * @since 1.43
+	 */
+	public const RestSandboxSpecs = [
+		'default' => [],
+		'type' => 'map',
+		'additionalProperties' => [
+			'type' => 'object',
+			'properties' => [
+				'url' => [ 'type' => 'string', 'format' => 'url' ],
+				'name' => [ 'type' => 'string' ],
+				'msg' => [ 'type' => 'string', 'description' => 'a message key' ]
+			],
+			'required' => [ 'url' ]
+		]
+	];
+
 	// endregion -- End AJAX and API
 
 	/***************************************************************************/
@@ -12862,6 +12888,16 @@ class MainConfigSchema {
 	 * @since 1.42
 	 */
 	public const ShowLogoutConfirmation = [
+		'default' => false,
+		'type' => 'boolean',
+	];
+
+	/**
+	 * Whether to show indicators on a page when it is protected.
+	 *
+	 * @since 1.43
+	 */
+	public const EnableProtectionIndicators = [
 		'default' => false,
 		'type' => 'boolean',
 	];

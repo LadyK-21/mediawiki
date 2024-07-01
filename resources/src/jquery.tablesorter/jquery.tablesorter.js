@@ -1,22 +1,17 @@
 /**
- * TableSorter for MediaWiki
- *
- * Written 2011 Leo Koppelkamm
- * Based on tablesorter.com plugin, written (c) 2007 Christian Bach.
- *
- * Dual licensed under the MIT and GPL licenses:
- * http://www.opensource.org/licenses/mit-license.php
- * http://www.gnu.org/licenses/gpl.html
+ * Provides a {@link jQuery} plugin that creates a sortable table.
  *
  * Depends on mw.config (wgDigitTransformTable, wgDefaultDateFormat, wgPageContentLanguage)
- * and mw.language.months.
+ * and {@link mw.language.months}.
  *
- * Uses 'tableSorterCollation' in mw.config (if available)
+ * Uses 'tableSorterCollation' in {@link mw.config} (if available).
  *
- * @author Christian Bach/christian.bach@polyester.se
+ * @module jquery.tablesorter
+ * @author Written 2011 Leo Koppelkamm. Based on tablesorter.com plugin, written (c) 2007 Christian Bach/christian.bach@polyester.se
+ * @license Dual licensed under the MIT (http://www.opensource.org/licenses/mit-license.php) and  GPL (http://www.gnu.org/licenses/gpl.html) licenses
  */
 /**
- * @typedef {Object} jQueryPlugins~TableSorterOptions
+ * @typedef {Object} module:jquery.tablesorter~TableSorterOptions
  * @property {string} [cssHeader="headerSort"] A string of the class name to be appended to sortable
  *         tr elements in the thead of the table.
  * @property {string} [cssAsc="headerSortUp"] A string of the class name to be appended to
@@ -67,7 +62,7 @@
 			// Iterate the NodeList (not an array).
 			// Also uses null-return as filter in the same pass.
 			// eslint-disable-next-line no-jquery/no-map-util
-			return $.map( currentNode.childNodes, function ( elem ) {
+			return $.map( currentNode.childNodes, ( elem ) => {
 				if ( elem.nodeType === Node.ELEMENT_NODE ) {
 					var nodeName = elem.nodeName.toLowerCase();
 					if ( nodeName === 'img' ) {
@@ -313,7 +308,7 @@
 
 	function uniqueElements( array ) {
 		var uniques = [];
-		array.forEach( function ( elem ) {
+		array.forEach( ( elem ) => {
 			if ( elem !== undefined && uniques.indexOf( elem ) === -1 ) {
 				uniques.push( elem );
 			}
@@ -334,9 +329,9 @@
 			var exploded = [];
 
 			// Loop through all the dom cells of the thead
-			$tableRows.each( function ( rowIndex, row ) {
+			$tableRows.each( ( rowIndex, row ) => {
 				// eslint-disable-next-line no-jquery/no-each-util
-				$.each( row.cells, function ( columnIndex, cell ) {
+				$.each( row.cells, ( columnIndex, cell ) => {
 					var rowspan = Number( cell.rowSpan );
 					var colspan = Number( cell.colSpan );
 
@@ -361,7 +356,7 @@
 			} );
 			var longestTR;
 			// We want to find the row that has the most columns (ignoring colspan)
-			exploded.forEach( function ( cellArray, index ) {
+			exploded.forEach( ( cellArray, index ) => {
 				var headerCount = $( uniqueElements( cellArray ) ).filter( 'th' ).length;
 				if ( headerCount >= maxSeen ) {
 					maxSeen = headerCount;
@@ -442,9 +437,9 @@
 	 */
 	function setHeadersOrder( $headers, sortList, headerToColumns ) {
 		// Loop through all headers to retrieve the indices of the columns the header spans across:
-		headerToColumns.forEach( function ( columns, headerIndex ) {
+		headerToColumns.forEach( ( columns, headerIndex ) => {
 
-			columns.forEach( function ( columnIndex, i ) {
+			columns.forEach( ( columnIndex, i ) => {
 				var header = $headers[ headerIndex ],
 					$header = $( header );
 
@@ -559,7 +554,7 @@
 
 		// We allow a trailing percent sign, which we just strip. This works fine
 		// if percents and regular numbers aren't being mixed.
-		// eslint-disable-next-line security/detect-non-literal-regexp
+
 		ts.numberRegex = new RegExp(
 			'^(' +
 				'[-+\u2212]?[0-9][0-9,]*(\\.[0-9,]*)?(E[-+\u2212]?[0-9][0-9,]*)?' + // Fortran-style scientific
@@ -595,7 +590,7 @@
 		ts.dateRegex[ 0 ] = new RegExp( /^\s*(\d{1,2})[,.\-/'\s]{1,2}(\d{1,2})[,.\-/'\s]{1,2}(\d{2,4})\s*?/i );
 
 		// Written Month name, dmy
-		// eslint-disable-next-line security/detect-non-literal-regexp
+
 		ts.dateRegex[ 1 ] = new RegExp(
 			'^\\s*(\\d{1,2})[\\,\\.\\-\\/\'º\\s]+(' +
 				regex +
@@ -605,7 +600,7 @@
 		);
 
 		// Written Month name, mdy
-		// eslint-disable-next-line security/detect-non-literal-regexp
+
 		ts.dateRegex[ 2 ] = new RegExp(
 			'^\\s*(' + regex + ')' +
 			'[\\,\\.\\-\\/\'\\s]+(\\d{1,2})[\\,\\.\\-\\/\'\\s]+(\\d{2,4})\\s*$',
@@ -648,7 +643,7 @@
 		// Re-sort whenever a rowspanned cell's realCellIndex is changed, because it
 		// might change the sort order.
 		function resortCells() {
-			rowspanCells = rowspanCells.sort( function ( a, b ) {
+			rowspanCells = rowspanCells.sort( ( a, b ) => {
 				var cellAData = $.data( a, 'tablesorter' );
 				var cellBData = $.data( b, 'tablesorter' );
 				var ret = cellAData.realCellIndex - cellBData.realCellIndex;
@@ -657,7 +652,7 @@
 				}
 				return ret;
 			} );
-			rowspanCells.forEach( function ( cellNode ) {
+			rowspanCells.forEach( ( cellNode ) => {
 				$.data( cellNode, 'tablesorter' ).needResort = false;
 			} );
 		}
@@ -767,7 +762,7 @@
 				keys.push( mw.util.escapeRegExp( key ) );
 			}
 			if ( keys.length ) {
-				// eslint-disable-next-line security/detect-non-literal-regexp
+
 				ts.collationRegex = new RegExp( keys.join( '|' ), 'ig' );
 			}
 		}
@@ -811,9 +806,9 @@
 	 */
 	function convertSortList( sortObjects ) {
 		var sortList = [];
-		sortObjects.forEach( function ( sortObject ) {
+		sortObjects.forEach( ( sortObject ) => {
 			// eslint-disable-next-line no-jquery/no-each-util
-			$.each( sortObject, function ( columnIndex, order ) {
+			$.each( sortObject, ( columnIndex, order ) => {
 				var orderIndex = ( order === 'desc' ) ? 1 : 0;
 				sortList.push( [ parseInt( columnIndex, 10 ), orderIndex ] );
 			} );
@@ -850,7 +845,7 @@
 		 * @return {jQuery}
 		 */
 		construct: function ( $tables, settings ) {
-			return $tables.each( function ( i, table ) {
+			return $tables.each( ( i, table ) => {
 				// Declare and cache.
 				var cache,
 					$table = $( table ),
@@ -881,7 +876,7 @@
 				$table.addClass( 'jquery-tablesorter sortable' );
 
 				// Merge and extend
-				var config = $.extend( {}, $.tablesorter.defaultOptions, settings );
+				var config = Object.assign( {}, $.tablesorter.defaultOptions, settings );
 
 				// Save the settings where they read
 				$.data( table, 'tablesorter', { config: config } );
@@ -979,9 +974,7 @@
 
 						// Get current column index
 						var columns = config.headerToColumns[ $cell.data( 'headerIndex' ) ];
-						var newSortList = columns.map( function ( c ) {
-							return [ c, $cell.data( 'order' ) ];
-						} );
+						var newSortList = columns.map( ( c ) => [ c, $cell.data( 'order' ) ] );
 						// Index of first column belonging to this header
 						var col = columns[ 0 ];
 
@@ -1040,6 +1033,7 @@
 				 * making the table appear unsorted).
 				 *
 				 * @param {Array} [sortList] List of sort objects.
+				 * @ignore
 				 */
 				$table.data( 'tablesorter' ).sort = function ( sortList ) {
 
@@ -1132,10 +1126,11 @@
 
 	// Register as jQuery prototype method
 	/**
-	 * Create a sortable table with multi-column sorting capabilities. Provided by jquery.tablesorter ResourceLoader module.
+	 * Create a sortable table with multi-column sorting capabilities.
 	 *
-	 * @memberof jQueryPlugins
-	 * @method tablesorter
+	 * To use this {@link jQuery} plugin, load the `jquery.tablesorter` module with {@link mw.loader}.
+	 *
+	 * @memberof module:jquery.tablesorter
 	 * @example
 	 * mw.loader.using( 'jquery.tablesorter' ).then( () => {
 	 *      // Create a simple tablesorter interface
@@ -1145,7 +1140,7 @@
 	 *      $( 'table' ).tablesorter( { sortList: [ { 0: 'desc' }, { 1: 'asc' } ] } )
 	 *          .on( 'sortEnd.tablesorter', () => console.log( 'Triggered as soon as any sorting has been applied.' ) );
 	 * } );
-	 * @param {jQueryPlugins~TableSorterOptions} settings
+	 * @param {module:jquery.tablesorter~TableSorterOptions} settings
 	 * @return {jQuery}
 	 */
 	$.fn.tablesorter = function ( settings ) {
@@ -1161,7 +1156,7 @@
 		format: function ( s ) {
 			if ( ts.collationRegex ) {
 				var tsc = ts.collationTable;
-				s = s.replace( ts.collationRegex, function ( match ) {
+				s = s.replace( ts.collationRegex, ( match ) => {
 					var upper = match.toUpperCase(),
 						lower = match.toLowerCase();
 					var r;

@@ -159,7 +159,8 @@ function isIos() {
  * methods work from the technical side, and which methods are understandable for users.
  * Some methods or the whole library may be removed in the future.**
  *
- * @unstable
+ * Unstable.
+ *
  * @internal
  * @class
  */
@@ -270,9 +271,7 @@ class AuthPopup {
 	 *     Rejected when an unexpected error stops the login process.
 	 */
 	startNewTabOrWindow() {
-		const openWindow = () => {
-			return window.open( this.loginPopupUrl, '_blank' );
-		};
+		const openWindow = () => window.open( this.loginPopupUrl, '_blank' );
 
 		return this.showDialog( {
 			initOpenWindow: openWindow,

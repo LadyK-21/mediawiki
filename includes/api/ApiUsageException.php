@@ -28,7 +28,7 @@ use MediaWiki\Status\Status;
  * @newable
  * @ingroup API
  */
-class ApiUsageException extends MWException implements ILocalizedException {
+class ApiUsageException extends MWException implements Stringable, ILocalizedException {
 
 	protected $modulePath;
 	protected $status;
@@ -60,7 +60,7 @@ class ApiUsageException extends MWException implements ILocalizedException {
 
 	/**
 	 * @param ApiBase|null $module API module responsible for the error, if known
-	 * @param string|array|Message $msg See ApiMessage::create()
+	 * @param string|array|MessageSpecifier $msg See ApiMessage::create()
 	 * @param string|null $code See ApiMessage::create()
 	 * @param array|null $data See ApiMessage::create()
 	 * @param int $httpCode HTTP error code to use
@@ -82,16 +82,16 @@ class ApiUsageException extends MWException implements ILocalizedException {
 	 * @return ApiMessage
 	 */
 	private function getApiMessage() {
-		$errors = $this->status->getErrorsByType( 'error' );
-		if ( !$errors ) {
-			$errors = $this->status->getErrors();
+		// Return the first error message, if any; or the first warning message, if any; or a generic message
+		foreach ( $this->status->getMessages( 'error' ) as $msg ) {
+			// @phan-suppress-next-line PhanTypeMismatchReturnSuperType
+			return ApiMessage::create( $msg );
 		}
-		if ( !$errors ) {
-			$msg = new ApiMessage( 'apierror-unknownerror-nocode', 'unknownerror' );
-		} else {
-			$msg = ApiMessage::create( $errors[0] );
+		foreach ( $this->status->getMessages( 'warning' ) as $msg ) {
+			// @phan-suppress-next-line PhanTypeMismatchReturnSuperType
+			return ApiMessage::create( $msg );
 		}
-		return $msg;
+		return new ApiMessage( 'apierror-unknownerror-nocode', 'unknownerror' );
 	}
 
 	/**

@@ -1,5 +1,6 @@
 <?php
 
+use MediaWiki\Config\HashConfig;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Languages\LanguageConverterFactory;
 use MediaWiki\MainConfigNames;
@@ -8,13 +9,10 @@ use Wikimedia\TestingAccessWrapper;
 /**
  * @group large
  * @group Language
- * @coversDefaultClass \MediaWiki\Languages\LanguageConverterFactory
+ * @covers \MediaWiki\Languages\LanguageConverterFactory
  */
 class LanguageConverterFactoryTest extends MediaWikiLangTestCase {
 	/**
-	 * @covers ::__construct
-	 * @covers ::instantiateConverter
-	 * @covers ::getLanguageConverter
 	 * @dataProvider codeProvider
 	 */
 	public function testLanguageConverters(
@@ -56,11 +54,6 @@ class LanguageConverterFactoryTest extends MediaWikiLangTestCase {
 		);
 	}
 
-	/**
-	 * @covers ::__construct
-	 * @covers ::instantiateConverter
-	 * @covers ::getLanguageConverter
-	 */
 	public function testCreateFromCodeEnPigLatin() {
 		$lang = $this->getServiceContainer()->getLanguageFactory()->getLanguage( 'en' );
 		$factory = new LanguageConverterFactory(
@@ -94,9 +87,6 @@ class LanguageConverterFactoryTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers ::__construct
-	 * @covers ::instantiateConverter
-	 * @covers ::getLanguageConverter
 	 * @dataProvider booleanProvider
 	 */
 	public function testDisabledBooleans( $pigLatinDisabled, $conversionDisabled, $titleDisabled ) {
@@ -141,11 +131,6 @@ class LanguageConverterFactoryTest extends MediaWikiLangTestCase {
 		];
 	}
 
-	/**
-	 * @covers ::__construct
-	 * @covers ::instantiateConverter
-	 * @covers ::getLanguageConverter
-	 */
 	public function testDefaultContentLanguageFallback() {
 		$lang = $this->getServiceContainer()->getLanguageFactory()->getLanguage( 'en' );
 		$factory = new LanguageConverterFactory(

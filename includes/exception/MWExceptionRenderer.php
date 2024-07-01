@@ -23,6 +23,7 @@ use MediaWiki\Html\Html;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use MediaWiki\Request\WebRequest;
 use Wikimedia\AtEase;
 use Wikimedia\Rdbms\DBConnectionError;
@@ -194,6 +195,7 @@ class MWExceptionRenderer {
 				'<title>' .
 				htmlspecialchars( self::msg( 'pagetitle', '$1 - MediaWiki', $pageTitle ) ) .
 				'</title>' .
+				'<meta name="color-scheme" content="light dark" />' .
 				'<style>body { font-family: sans-serif; margin: 0; padding: 0.5em 2em; }</style>' .
 				"</head><body>\n";
 
@@ -422,6 +424,7 @@ class MWExceptionRenderer {
 		$html = "<!DOCTYPE html>\n" .
 				'<html><head>' .
 				'<title>MediaWiki</title>' .
+				'<meta name="color-scheme" content="light dark" />' .
 				'<style>body { font-family: sans-serif; margin: 0; padding: 0.5em 2em; }</style>' .
 				"</head><body><h1>$sorry</h1><p>$again</p><p><small>$info</small></p>";
 

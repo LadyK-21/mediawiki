@@ -23,7 +23,7 @@ var SaveFiltersPopupButtonWidget = function MwRcfiltersUiSaveFiltersPopupButtonW
 	this.model = model;
 
 	// Parent
-	SaveFiltersPopupButtonWidget.super.call( this, $.extend( {
+	SaveFiltersPopupButtonWidget.super.call( this, Object.assign( {
 		framed: false,
 		icon: 'bookmark',
 		title: mw.msg( 'rcfilters-savedqueries-add-new-title' ),
@@ -127,7 +127,7 @@ SaveFiltersPopupButtonWidget.prototype.onInputChange = function ( value ) {
  * Respond to input keyup event, this is the way to intercept 'escape' key
  *
  * @param {jQuery.Event} e Event data
- * @return {boolean} false
+ * @return {boolean|undefined} false
  */
 SaveFiltersPopupButtonWidget.prototype.onInputKeyup = function ( e ) {
 	if ( e.which === OO.ui.Keys.ESCAPE ) {

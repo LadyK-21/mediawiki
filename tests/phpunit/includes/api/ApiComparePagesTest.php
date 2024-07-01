@@ -6,6 +6,7 @@ use ApiUsageException;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleValue;
 use RevisionDeleter;
@@ -17,6 +18,8 @@ use RevisionDeleter;
  * @covers \ApiComparePages
  */
 class ApiComparePagesTest extends ApiTestCase {
+
+	use TempUserTestTrait;
 
 	protected static $repl = [];
 
@@ -41,6 +44,7 @@ class ApiComparePagesTest extends ApiTestCase {
 	}
 
 	public function addDBDataOnce() {
+		$this->disableAutoCreateTempUser();
 		$user = static::getTestSysop()->getUser();
 		self::$repl['creator'] = $user->getName();
 		self::$repl['creatorid'] = $user->getId();
@@ -63,9 +67,9 @@ class ApiComparePagesTest extends ApiTestCase {
 			self::$repl['revB4'] => '20040404044404',
 		];
 		foreach ( $updateTimestamps as $id => $ts ) {
-			$this->db->newUpdateQueryBuilder()
+			$this->getDb()->newUpdateQueryBuilder()
 				->update( 'revision' )
-				->set( [ 'rev_timestamp' => $this->db->timestamp( $ts ) ] )
+				->set( [ 'rev_timestamp' => $this->getDb()->timestamp( $ts ) ] )
 				->where( [ 'rev_id' => $id ] )
 				->caller( __METHOD__ )
 				->execute();

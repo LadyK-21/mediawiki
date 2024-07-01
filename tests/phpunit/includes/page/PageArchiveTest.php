@@ -5,6 +5,7 @@ use MediaWiki\Content\TextContent;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentityValue;
 use Wikimedia\IPUtils;
@@ -15,6 +16,8 @@ use Wikimedia\IPUtils;
  * @covers ::__construct
  */
 class PageArchiveTest extends MediaWikiIntegrationTestCase {
+
+	use TempUserTestTrait;
 
 	/**
 	 * @var int
@@ -46,6 +49,7 @@ class PageArchiveTest extends MediaWikiIntegrationTestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
+		$this->disableAutoCreateTempUser();
 
 		// First create our dummy page
 		$this->archivedPage = Title::makeTitle( NS_MAIN, 'PageArchiveTest_thePage' );
@@ -142,11 +146,11 @@ class PageArchiveTest extends MediaWikiIntegrationTestCase {
 				'ar_user' => null,
 				'ar_user_text' => $this->ipEditor,
 				'ar_actor' => (string)$this->getServiceContainer()->getActorNormalization()
-					->acquireActorId( new UserIdentityValue( 0, $this->ipEditor ), $this->db ),
+					->acquireActorId( new UserIdentityValue( 0, $this->ipEditor ), $this->getDb() ),
 				'ar_len' => '11',
 				'ar_deleted' => '0',
 				'ar_rev_id' => strval( $this->ipRev->getId() ),
-				'ar_timestamp' => $this->db->timestamp( $this->ipRev->getTimestamp() ),
+				'ar_timestamp' => $this->getDb()->timestamp( $this->ipRev->getTimestamp() ),
 				'ar_sha1' => '0qdrpxl537ivfnx4gcpnzz0285yxryy',
 				'ar_page_id' => strval( $this->ipRev->getPageId() ),
 				'ar_comment_text' => 'just a test',
@@ -166,7 +170,7 @@ class PageArchiveTest extends MediaWikiIntegrationTestCase {
 				'ar_len' => '7',
 				'ar_deleted' => '0',
 				'ar_rev_id' => strval( $this->firstRev->getId() ),
-				'ar_timestamp' => $this->db->timestamp( $this->firstRev->getTimestamp() ),
+				'ar_timestamp' => $this->getDb()->timestamp( $this->firstRev->getTimestamp() ),
 				'ar_sha1' => 'pr0s8e18148pxhgjfa0gjrvpy8fiyxc',
 				'ar_page_id' => strval( $this->firstRev->getPageId() ),
 				'ar_comment_text' => 'testing',

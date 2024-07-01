@@ -281,9 +281,6 @@ class UserGroupManager {
 				$groups[] = 'temp';
 			} elseif ( $user->isRegistered() ) {
 				$groups[] = 'user';
-				if ( $this->tempUserConfig->isEnabled() ) {
-					$groups[] = 'named';
-				}
 				$groups = array_unique( array_merge(
 					$groups,
 					$this->getUserAutopromoteGroups( $user )

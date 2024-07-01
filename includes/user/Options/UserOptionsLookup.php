@@ -35,6 +35,13 @@ abstract class UserOptionsLookup {
 	public const EXCLUDE_DEFAULTS = 1;
 
 	/**
+	 * The suffix appended to preference names for the associated preference
+	 * that tracks whether they have a local override.
+	 * @since 1.43
+	 */
+	public const LOCAL_EXCEPTION_SUFFIX = '-local-exception';
+
+	/**
 	 * Combine the language default options with any site-specific and user-specific defaults
 	 * and add the default language variants.
 	 *
@@ -141,7 +148,19 @@ abstract class UserOptionsLookup {
 		}
 		return intval( $val );
 	}
-}
 
+	/**
+	 * Determine if a user option came from a source other than the local store
+	 * or the defaults. If this is true, setting the option will be ignored
+	 * unless GLOBAL_OVERRIDE or GLOBAL_UPDATE is passed to setOption().
+	 *
+	 * @param UserIdentity $user
+	 * @param string $key
+	 * @return bool
+	 */
+	public function isOptionGlobal( UserIdentity $user, string $key ) {
+		return false;
+	}
+}
 /** @deprecated class alias since 1.41 */
 class_alias( UserOptionsLookup::class, 'MediaWiki\\User\\UserOptionsLookup' );

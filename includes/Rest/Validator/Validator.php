@@ -15,6 +15,7 @@ use Wikimedia\Message\ListType;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\ObjectFactory\ObjectFactory;
 use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\ParamValidator\TypeDef;
 use Wikimedia\ParamValidator\TypeDef\BooleanDef;
 use Wikimedia\ParamValidator\TypeDef\EnumDef;
 use Wikimedia\ParamValidator\TypeDef\ExpiryDef;
@@ -68,7 +69,7 @@ class Validator {
 		'NULL' => [
 			'class' => StringDef::class,
 			'args' => [ [
-				'allowEmptyWhenRequired' => true,
+				StringDef::OPT_ALLOW_EMPTY => true,
 			] ],
 		],
 		'password' => [ 'class' => PasswordDef::class ],
@@ -105,8 +106,7 @@ class Validator {
 		'multipart/form-data',
 	];
 
-	/** @var ParamValidator */
-	private $paramValidator;
+	private ParamValidator $paramValidator;
 
 	/**
 	 * @param ObjectFactory $objectFactory
@@ -182,6 +182,7 @@ class Validator {
 		$remainingBodyFields = $parsedBody;
 		foreach ( $paramSettings as $name => $settings ) {
 			$source = $settings[Handler::PARAM_SOURCE] ?? 'unspecified';
+
 			if ( $source !== 'body' ) {
 				continue;
 			}
@@ -192,11 +193,16 @@ class Validator {
 		$unvalidatedKeys = array_keys( $remainingBodyFields );
 
 		// Throw if there are unvalidated keys left and there are body params defined.
+		// If there are no known body params declared, we just ignore any body
+		// data coming from the client. This works around that fact that "post"
+		// params also show up in the parsed body. That means that mixing "body"
+		// and "post" params will trigger an error here. Any "post" params should
+		// be converted to "body".
 		if ( $validatedKeys && $unvalidatedKeys ) {
 			throw new LocalizedHttpException(
 				new MessageValue(
 					'rest-extraneous-body-fields',
-					[ new ListParam( ListType::COMMA, array_keys( $unvalidatedKeys ) ) ]
+					[ new ListParam( ListType::COMMA, $unvalidatedKeys ) ]
 				),
 				400,
 				[ // match fields used by validateBodyParams()
@@ -217,10 +223,13 @@ class Validator {
 	 * @see validateParams
 	 * @see validateBody
 	 * @param array[] $paramSettings Parameter settings.
+	 * @param bool $enforceTypes $enforceTypes Whether the types of primitive values should
+	 *         be enforced. If set to false, parameters values are allowed to be
+	 *         strings.
 	 * @return array Validated parameters
 	 * @throws HttpException on validation failure
 	 */
-	public function validateBodyParams( array $paramSettings ) {
+	public function validateBodyParams( array $paramSettings, bool $enforceTypes = true ) {
 		$validatedParams = [];
 		foreach ( $paramSettings as $name => $settings ) {
 			$source = $settings[Handler::PARAM_SOURCE] ?? 'body';
@@ -229,9 +238,18 @@ class Validator {
 			}
 
 			try {
-				$validatedParams[$name] = $this->paramValidator->getValue( $name, $settings, [
-					'source' => $source,
-				] );
+				$validatedParams[ $name ] = $this->paramValidator->getValue(
+					$name,
+					$settings,
+					[
+						'source' => $source,
+						// TODO: Replace this with OPT_ENFORCE_JSON_TYPES and
+						//       remove support for OPT_LOG_BAD_TYPES (grep
+						//       for T305973).
+						TypeDef::OPT_LOG_BAD_TYPES => $enforceTypes,
+						StringDef::OPT_ALLOW_EMPTY => $enforceTypes,
+					]
+				);
 			} catch ( ValidationException $e ) {
 				$msg = $e->getFailureMessage();
 				$wrappedMsg = new MessageValue(
@@ -291,7 +309,7 @@ class Validator {
 
 		// Form data is parsed into $_POST and $_FILES by PHP and from there is accessed as parameters,
 		// don't bother trying to handle these via BodyValidator too.
-		if ( in_array( $ct, self::FORM_DATA_CONTENT_TYPES, true ) ) {
+		if ( in_array( $ct, RequestInterface::FORM_DATA_CONTENT_TYPES, true ) ) {
 			return null;
 		}
 

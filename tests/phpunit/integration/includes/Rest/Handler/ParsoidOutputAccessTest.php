@@ -3,6 +3,7 @@
 use MediaWiki\Content\JavaScriptContent;
 use MediaWiki\Edit\ParsoidRenderID;
 use MediaWiki\Page\ParserOutputAccess;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Parser\ParserOutputFlags;
 use MediaWiki\Parser\Parsoid\PageBundleParserOutputConverter;
 use MediaWiki\Parser\Parsoid\ParsoidOutputAccess;
@@ -516,10 +517,10 @@ class ParsoidOutputAccessTest extends MediaWikiIntegrationTestCase {
 		$parsoidOutputAccess = $this->getServiceContainer()->getParsoidOutputAccess();
 		$status = $parsoidOutputAccess->parseUncacheable( $page->getTitle(), $pOpts, $revRecord );
 
-		$this->assertStatusError( 'parsoid-revision-access', $status );
-		$this->assertSame(
-			[ 'parsoid-revision-access', 'Not an available content version.' ],
-			$status->getErrorsArray()[0] ?? []
+		$this->assertStatusNotOK( $status );
+		$this->assertStatusMessagesExactly(
+			StatusValue::newFatal( 'parsoid-revision-access', 'Not an available content version.' ),
+			$status
 		);
 	}
 

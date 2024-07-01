@@ -49,7 +49,8 @@ class UserOptionsManagerTest extends UserOptionsLookupTestBase {
 			new NullLogger(),
 			$overrides['hookContainer'] ?? $services->getHookContainer(),
 			$services->getUserFactory(),
-			$services->getUserNameUtils()
+			$services->getUserNameUtils(),
+			$services->getObjectFactory()
 		);
 	}
 
@@ -279,7 +280,7 @@ class UserOptionsManagerTest extends UserOptionsLookupTestBase {
 	}
 
 	/**
-	 * @covers \MediaWiki\User\Options\UserOptionsManager::resetOptions
+	 * @covers \MediaWiki\User\Options\UserOptionsManager::resetOptionsByName
 	 */
 	public function testUserOptionsSaveAfterReset() {
 		$user = $this->getTestUser()->getUser();
@@ -288,7 +289,8 @@ class UserOptionsManagerTest extends UserOptionsLookupTestBase {
 		$manager->saveOptions( $user );
 		$manager->clearUserOptionsCache( $user );
 		$this->assertSame( 'test_value', $manager->getOption( $user, 'test_option' ) );
-		$manager->resetOptions( $user, RequestContext::getMain(), 'all' );
+		$optionNames = array_keys( $manager->getOptions( $user ) );
+		$manager->resetOptionsByName( $user, $optionNames );
 		$this->assertNull( $manager->getOption( $user, 'test_option' ) );
 		$manager->saveOptions( $user );
 		$manager->clearUserOptionsCache( $user );

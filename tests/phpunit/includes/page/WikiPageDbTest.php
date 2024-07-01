@@ -7,6 +7,7 @@ use MediaWiki\Content\TextContent;
 use MediaWiki\Deferred\SiteStatsUpdate;
 use MediaWiki\Edit\PreparedEdit;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionRecord;
@@ -14,6 +15,7 @@ use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Storage\RevisionSlotsUpdate;
 use MediaWiki\Tests\Unit\DummyServicesTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\Utils\MWTimestamp;
@@ -27,6 +29,7 @@ use Wikimedia\TestingAccessWrapper;
 class WikiPageDbTest extends MediaWikiLangTestCase {
 	use DummyServicesTrait;
 	use MockAuthorityTrait;
+	use TempUserTestTrait;
 
 	protected function tearDown(): void {
 		ParserOptions::clearStaticCache();
@@ -390,7 +393,7 @@ class WikiPageDbTest extends MediaWikiLangTestCase {
 			// as long as no garbage is written to the database.
 		}
 
-		$row = $this->db->newSelectQueryBuilder()
+		$row = $this->getDb()->newSelectQueryBuilder()
 			->select( '*' )
 			->from( 'page' )
 			->where( [ 'page_namespace' => $title->getNamespace(), 'page_title' => $title->getDBkey() ] )
@@ -662,6 +665,8 @@ class WikiPageDbTest extends MediaWikiLangTestCase {
 			MainConfigNames::ForeignFileRepos => [],
 		] );
 
+		$titleFormatter = $this->getServiceContainer()->getTitleFormatter();
+
 		$page = $this->createPage( $title, $text, $model );
 
 		# double check, because this test seems to fail for no reason for some people.
@@ -671,7 +676,8 @@ class WikiPageDbTest extends MediaWikiLangTestCase {
 		# now, test the actual redirect
 		$redirectStore = $this->getServiceContainer()->getRedirectStore();
 		$t = $redirectStore->getRedirectTarget( $page );
-		$this->assertEquals( $target, $t ? $t->getFullText() : null );
+
+		$this->assertEquals( $target, $t ? $titleFormatter->getFullText( $t ) : null );
 	}
 
 	/**
@@ -1127,6 +1133,8 @@ more stuff
 	 * @dataProvider provideGetAutoDeleteReason
 	 */
 	public function testGetAutoDeleteReason( $edits, $expectedResult, $expectedHistory ) {
+		$this->disableAutoCreateTempUser();
+
 		// NOTE: assume Help namespace to contain wikitext
 		$page = $this->newPage( "Help:WikiPageTest_testGetAutoDeleteReason" );
 
@@ -1268,11 +1276,11 @@ more stuff
 			? Title::newFromText( $redirectTitle )
 			: $redirectTitle;
 
-		$success = TestingAccessWrapper::newFromObject( $page )
-			->updateRedirectOn( $this->db, $redirectTitle, $lastRevIsRedirect );
+		$success = $this->getServiceContainer()->getRedirectStore()
+			->updateRedirectTarget( $page, $redirectTitle, $lastRevIsRedirect );
 		$this->assertSame( $expectedSuccess, $success, 'Success assertion' );
 		/**
-		 * updateRedirectOn explicitly updates the redirect table (and not the page table).
+		 * updateRedirectTarget explicitly updates the redirect table (and not the page table).
 		 * Most of core checks the page table for redirect status, so we have to be ugly and
 		 * assert a select from the table here.
 		 */
@@ -1294,7 +1302,8 @@ more stuff
 		$targetTitle = Title::newFromText( 'SomeTarget#Frag' );
 		$reflectedTitle = TestingAccessWrapper::newFromObject( $targetTitle );
 		$reflectedTitle->mInterwiki = 'eninter';
-		$page->insertRedirectEntry( $targetTitle, null );
+		$this->getServiceContainer()->getRedirectStore()
+			->updateRedirectTarget( $page, $targetTitle );
 
 		$this->newSelectQueryBuilder()
 			->select( [ 'rd_from', 'rd_namespace', 'rd_title', 'rd_fragment', 'rd_interwiki' ] )
@@ -1307,40 +1316,6 @@ more stuff
 				strval( $targetTitle->getFragment() ),
 				strval( $targetTitle->getInterwiki() ),
 			] ] );
-	}
-
-	public function testInsertRedirectEntry_insertsRedirectEntryWithPageLatest() {
-		$page = $this->createPage( Title::newFromText( __METHOD__ ), 'A' );
-		$this->assertRedirectTableCountForPageId( $page->getId(), [] );
-
-		$targetTitle = Title::newFromText( 'SomeTarget#Frag' );
-		$reflectedTitle = TestingAccessWrapper::newFromObject( $targetTitle );
-		$reflectedTitle->mInterwiki = 'eninter';
-		$page->insertRedirectEntry( $targetTitle, $page->getLatest() );
-
-		$this->newSelectQueryBuilder()
-			->select( [ 'rd_from', 'rd_namespace', 'rd_title', 'rd_fragment', 'rd_interwiki' ] )
-			->from( 'redirect' )
-			->where( [ 'rd_from' => $page->getId() ] )
-			->assertResultSet( [ [
-				strval( $page->getId() ),
-				strval( $targetTitle->getNamespace() ),
-				strval( $targetTitle->getDBkey() ),
-				strval( $targetTitle->getFragment() ),
-				strval( $targetTitle->getInterwiki() ),
-			] ] );
-	}
-
-	public function testInsertRedirectEntry_doesNotInsertIfPageLatestIncorrect() {
-		$page = $this->createPage( Title::newFromText( __METHOD__ ), 'A' );
-		$this->assertRedirectTableCountForPageId( $page->getId(), [] );
-
-		$targetTitle = Title::newFromText( 'SomeTarget#Frag' );
-		$reflectedTitle = TestingAccessWrapper::newFromObject( $targetTitle );
-		$reflectedTitle->mInterwiki = 'eninter';
-		$page->insertRedirectEntry( $targetTitle, 215251 );
-
-		$this->assertRedirectTableCountForPageId( $page->getId(), [] );
 	}
 
 	public function testInsertRedirectEntry_T278367() {
@@ -1348,7 +1323,8 @@ more stuff
 		$this->assertRedirectTableCountForPageId( $page->getId(), [] );
 
 		$targetTitle = Title::newFromText( '#Frag' );
-		$ok = $page->insertRedirectEntry( $targetTitle );
+		$ok = $this->getServiceContainer()->getRedirectStore()
+			->updateRedirectTarget( $page, $targetTitle );
 
 		$this->assertFalse( $ok );
 		$this->assertRedirectTableCountForPageId( $page->getId(), [] );
@@ -1434,7 +1410,7 @@ more stuff
 			] ] );
 
 		// Check the page_random field has been filled
-		$pageRandom = $this->db->newSelectQueryBuilder()
+		$pageRandom = $this->getDb()->newSelectQueryBuilder()
 			->select( 'page_random' )
 			->from( 'page' )
 			->where( $condition )
@@ -1442,7 +1418,7 @@ more stuff
 		$this->assertTrue( (float)$pageRandom < 1 && (float)$pageRandom > 0 );
 
 		// Assert the touched timestamp in the DB is roughly when we inserted the page
-		$pageTouched = $this->db->newSelectQueryBuilder()
+		$pageTouched = $this->getDb()->newSelectQueryBuilder()
 			->select( 'page_touched' )
 			->from( 'page' )
 			->where( $condition )
@@ -1881,7 +1857,7 @@ more stuff
 	public function testGetTouched() {
 		$page = $this->createPage( __METHOD__, 'whatever' );
 
-		$touched = $this->db->newSelectQueryBuilder()
+		$touched = $this->getDb()->newSelectQueryBuilder()
 			->select( 'page_touched' )
 			->from( 'page' )
 			->where( [ 'page_id' => $page->getId() ] )

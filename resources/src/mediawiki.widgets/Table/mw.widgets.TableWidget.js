@@ -129,9 +129,9 @@ OO.mixinClass( mw.widgets.TableWidget, OO.ui.mixin.GroupElement );
 
 /* Static Properties */
 mw.widgets.TableWidget.static.patterns = {
-	// eslint-disable-next-line security/detect-unsafe-regex
+
 	validate: /^[0-9]+(\.[0-9]+)?$/,
-	// eslint-disable-next-line security/detect-unsafe-regex
+
 	filter: /[0-9]+(\.[0-9]+)?/
 };
 
@@ -543,12 +543,12 @@ mw.widgets.TableWidget.prototype.setDisabled = function ( disabled ) {
 		return;
 	}
 
-	this.getItems().forEach( function ( row ) {
+	this.getItems().forEach( ( row ) => {
 		row.setDisabled( disabled );
 	} );
 
 	if ( this.model.getTableProperties().allowRowInsertion ) {
-		this.insertionRow.getItems().forEach( function ( row ) {
+		this.insertionRow.getItems().forEach( ( row ) => {
 			row.setDisabled( disabled );
 		} );
 	}

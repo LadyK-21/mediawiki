@@ -22,13 +22,14 @@ use MediaWiki\Json\FormatJson;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Status\Status;
+use MediaWiki\Title\Title;
 use Wikimedia\IPSet;
 use Wikimedia\IPUtils;
 
 /**
  * A class to check request restrictions expressed as a JSON object
  */
-class MWRestrictions {
+class MWRestrictions implements Stringable {
 
 	private $ipAddresses = [ '0.0.0.0/0', '::/0' ];
 

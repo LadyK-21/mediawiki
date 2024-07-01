@@ -30,7 +30,7 @@
 	 */
 	mw.widgets.datetime.CalendarWidget = function MwWidgetsDatetimeCalendarWidget( config ) {
 		// Configuration initialization
-		config = $.extend( {
+		config = Object.assign( {
 			min: null,
 			max: null,
 			focusedDate: new Date(),
@@ -42,7 +42,7 @@
 		mw.widgets.datetime.CalendarWidget.super.call( this, config );
 
 		// Mixin constructors
-		OO.ui.mixin.TabIndexedElement.call( this, $.extend( {}, config, { $tabIndexed: this.$element } ) );
+		OO.ui.mixin.TabIndexedElement.call( this, Object.assign( {}, config, { $tabIndexed: this.$element } ) );
 
 		// Properties
 		if ( config.min instanceof Date && config.min.getTime() >= -62167219200000 ) {
@@ -218,9 +218,7 @@
 		if ( dates instanceof Date ) {
 			dates = [ dates ];
 		} else if ( Array.isArray( dates ) ) {
-			dates = dates.filter( function ( dt ) {
-				return dt instanceof Date;
-			} );
+			dates = dates.filter( ( dt ) => dt instanceof Date );
 			dates.sort();
 		} else {
 			dates = [];
@@ -510,7 +508,7 @@
 	 *
 	 * @protected
 	 * @param {jQuery.Event} e Key down event
-	 * @return {boolean} False to cancel the default event
+	 * @return {boolean|undefined} False to cancel the default event
 	 */
 	mw.widgets.datetime.CalendarWidget.prototype.onKeyDown = function ( e ) {
 		const focusedDate = this.getFocusedDate();

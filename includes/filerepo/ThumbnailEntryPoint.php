@@ -40,15 +40,14 @@ use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiEntryPoint;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\PoolCounter\PoolCounterWorkViaCallback;
 use MediaWiki\Profiler\ProfilingContext;
 use MediaWiki\Request\HeaderCallback;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
-use Message;
 use MessageSpecifier;
-use ObjectCache;
 use RepoGroup;
 use UnregisteredLocalFile;
 use Wikimedia\AtEase\AtEase;
@@ -366,7 +365,9 @@ class ThumbnailEntryPoint extends MediaWikiEntryPoint {
 	protected function generateThumbnail( File $file, array $params, $thumbName, $thumbPath ) {
 		$attemptFailureEpoch = $this->getConfig( MainConfigNames::AttemptFailureEpoch );
 
-		$cache = ObjectCache::getLocalClusterInstance();
+		$services = MediaWikiServices::getInstance()->getObjectCacheFactory();
+
+		$cache = $services->getLocalClusterInstance();
 		$key = $cache->makeKey(
 			'attempt-failures',
 			$attemptFailureEpoch,
@@ -591,6 +592,7 @@ class ThumbnailEntryPoint extends MediaWikiEntryPoint {
 <!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8" />
+<meta name="color-scheme" content="light dark" />
 <title>Error generating thumbnail</title>
 </head>
 <body>

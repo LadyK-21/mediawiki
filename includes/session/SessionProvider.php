@@ -32,11 +32,13 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\HookContainer\HookRunner;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Message\Message;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\User\User;
 use MediaWiki\User\UserNameUtils;
 use MWRestrictions;
 use Psr\Log\LoggerInterface;
+use Stringable;
 
 /**
  * A SessionProvider provides SessionInfo and support for Session
@@ -84,7 +86,7 @@ use Psr\Log\LoggerInterface;
  * @since 1.27
  * @see https://www.mediawiki.org/wiki/Manual:SessionManager_and_AuthManager
  */
-abstract class SessionProvider implements SessionProviderInterface {
+abstract class SessionProvider implements Stringable, SessionProviderInterface {
 
 	/** @var LoggerInterface */
 	protected $logger;
@@ -624,7 +626,7 @@ abstract class SessionProvider implements SessionProviderInterface {
 	 * @warning This will be called early during MediaWiki startup. Do not
 	 *  use $wgUser, $wgLang, $wgOut, the global Parser, or their equivalents via
 	 *  RequestContext from this method!
-	 * @return \Message
+	 * @return Message
 	 */
 	protected function describeMessage() {
 		return wfMessage(

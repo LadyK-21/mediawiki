@@ -19,6 +19,7 @@
  * @since 1.23
  */
 
+use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Feed\ChannelFeed;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Request\DerivativeRequest;
@@ -190,7 +191,7 @@ class ApiFeedRecentChanges extends ApiBase {
 			'hidebots' => false,
 			'hideanons' => [
 				ParamValidator::PARAM_DEFAULT => false,
-				ApiBase::PARAM_HELP_MSG => $this->tempUserConfig->isEnabled() ?
+				ApiBase::PARAM_HELP_MSG => $this->tempUserConfig->isKnown() ?
 					'apihelp-feedrecentchanges-param-hideanons-temp' :
 					'apihelp-feedrecentchanges-param-hideanons',
 			],

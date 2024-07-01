@@ -2,7 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"!Silent",
-			555,
+			"555",
 			"Albertoleoncio",
 			"Alcali",
 			"Alchimista",
@@ -1191,7 +1191,6 @@
 	"userrights-conflict": "Há um comflito de permissões de usuário! Por favor, revise e confirme as alterações novamente.",
 	"group": "Grupo:",
 	"group-user": "Usuários",
-	"group-named": "Usuários registrados",
 	"group-temp": "Usuários temporários",
 	"group-autoconfirmed": "Usuários autoconfirmados",
 	"group-bot": "Robôs",
@@ -1210,7 +1209,6 @@
 	"group-bureaucrat-member": "burocrata",
 	"group-suppress-member": "{{GENDER:$1|supressor|supressora|supressor(a)}}",
 	"grouppage-user": "{{ns:project}}:Usuários",
-	"grouppage-named": "{{ns:project}}:Usuários registados",
 	"grouppage-temp": "{{ns:project}}:Usuários temporários",
 	"grouppage-autoconfirmed": "{{ns:project}}:Auto-confirmados",
 	"grouppage-bot": "{{ns:project}}:Robôs",
@@ -3568,7 +3566,6 @@
 	"htmlform-selectorother-other": "Outros",
 	"htmlform-no": "Não",
 	"htmlform-yes": "Sim",
-	"htmlform-chosen-placeholder": "Selecione uma opção",
 	"htmlform-cloner-create": "Adicionar mais",
 	"htmlform-cloner-delete": "Remover",
 	"htmlform-cloner-required": "Pelo menos um valor é requerido",

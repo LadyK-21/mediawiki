@@ -15,7 +15,7 @@ var SavedLinksListItemWidget = function MwRcfiltersUiSavedLinksListWidget( model
 	this.model = model;
 
 	// Parent
-	SavedLinksListItemWidget.super.call( this, $.extend( {
+	SavedLinksListItemWidget.super.call( this, Object.assign( {
 		data: this.model.getID(),
 		label: this.model.getLabel(),
 		title: this.model.getLabel()
@@ -80,7 +80,7 @@ var SavedLinksListItemWidget = function MwRcfiltersUiSavedLinksListWidget( model
 	this.$icon.on( { click: this.onDefaultIconClick.bind( this ) } );
 
 	// Prevent clicks on interactive elements from closing the parent menu
-	this.buttonMenu.$element.add( this.$icon ).on( 'mousedown', function ( e ) {
+	this.buttonMenu.$element.add( this.$icon ).on( 'mousedown', ( e ) => {
 		e.stopPropagation();
 	} );
 
@@ -200,7 +200,7 @@ SavedLinksListItemWidget.prototype.onMenuChoose = function ( item ) {
  * Respond to input keyup event, this is the way to intercept 'escape' key
  *
  * @param {jQuery.Event} e Event data
- * @return {boolean} false
+ * @return {boolean|undefined} false
  */
 SavedLinksListItemWidget.prototype.onInputKeyup = function ( e ) {
 	if ( e.which === OO.ui.Keys.ESCAPE ) {

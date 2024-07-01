@@ -391,7 +391,7 @@ return [
 			'MaxExecutionTimeForExpensiveQueries' => 0,
 			'VirtualDomainsMapping' => [
 			],
-			'PageLinksSchemaMigrationStage' => 769,
+			'PageLinksSchemaMigrationStage' => 768,
 			'ExternalLinksDomainGaps' => [
 			],
 			'ContentHandlers' => [
@@ -605,7 +605,6 @@ return [
 			'VariantArticlePath' => false,
 			'UseXssLanguage' => false,
 			'LoginLanguageSelector' => false,
-			'ExperimentalLoginPopup' => false,
 			'ForceUIMsgAsContentMsg' => [
 			],
 			'RawHtmlMessages' => [
@@ -1005,10 +1004,7 @@ return [
 					'cost' => 9,
 				],
 				'pbkdf2' => [
-					'factory' => [
-						'MediaWiki\\Password\\AbstractPbkdf2Password',
-						'newInstance',
-					],
+					'class' => 'MediaWiki\\Password\\Pbkdf2PasswordUsingOpenSSL',
 					'algo' => 'sha512',
 					'cost' => '30000',
 					'length' => '64',
@@ -1145,6 +1141,7 @@ return [
 			],
 			'AllowRequiringEmailForResets' => false,
 			'AutoCreateTempUser' => [
+				'known' => false,
 				'enabled' => false,
 				'actions' => [
 					'edit',
@@ -1159,7 +1156,7 @@ return [
 				'serialMapping' => [
 					'type' => 'plain-numeric',
 				],
-				'expireAfterDays' => 365,
+				'expireAfterDays' => 90,
 				'notifyBeforeExpirationDays' => 10,
 			],
 			'AutoblockExpiry' => 86400,
@@ -1605,6 +1602,7 @@ return [
 					'applychangetags' => true,
 					'changetags' => true,
 					'editcontentmodel' => true,
+					'pagelang' => true,
 				],
 				'editprotected' => [
 					'edit' => true,
@@ -2141,7 +2139,7 @@ return [
 				'parsoidCachePrewarm' => [
 					'class' => 'ParsoidCachePrewarmJob',
 					'services' => [
-						'ParsoidOutputAccess',
+						'ParserOutputAccess',
 						'PageStore',
 						'RevisionLookup',
 						'ParsoidSiteConfig',
@@ -2473,6 +2471,8 @@ return [
 			],
 			'RestAPIAdditionalRouteFiles' => [
 			],
+			'RestSandboxSpecs' => [
+			],
 			'MaxShellMemory' => 307200,
 			'MaxShellFileSize' => 102400,
 			'MaxShellTime' => 180,
@@ -2535,6 +2535,7 @@ return [
 			'EditRecoveryExpiry' => 2592000,
 			'UseCodexSpecialBlock' => false,
 			'ShowLogoutConfirmation' => false,
+			'EnableProtectionIndicators' => false,
 		],
 		'type' => [
 			'ConfigRegistry' => 'object',
@@ -2977,6 +2978,7 @@ return [
 			'CrossSiteAJAXdomainExceptions' => 'object',
 			'AllowedCorsHeaders' => 'array',
 			'RestAPIAdditionalRouteFiles' => 'array',
+			'RestSandboxSpecs' => 'object',
 			'ShellRestrictionMethod' => [
 				'string',
 				'boolean',
@@ -3012,6 +3014,7 @@ return [
 			'EditRecoveryExpiry' => 'integer',
 			'UseCodexSpecialBlock' => 'boolean',
 			'ShowLogoutConfirmation' => 'boolean',
+			'EnableProtectionIndicators' => 'boolean',
 		],
 		'mergeStrategy' => [
 			'TiffThumbnailType' => 'replace',
@@ -3405,6 +3408,27 @@ return [
 		'RangeContributionsCIDRLimit' => [
 			'additionalProperties' => [
 				'type' => 'integer',
+			],
+		],
+		'RestSandboxSpecs' => [
+			'additionalProperties' => [
+				'type' => 'object',
+				'properties' => [
+					'url' => [
+						'type' => 'string',
+						'format' => 'url',
+					],
+					'name' => [
+						'type' => 'string',
+					],
+					'msg' => [
+						'type' => 'string',
+						'description' => 'a message key',
+					],
+				],
+				'required' => [
+					'url',
+				],
 			],
 		],
 		'ShellboxUrls' => [

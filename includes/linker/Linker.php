@@ -1128,6 +1128,7 @@ class Linker {
 	 * @param string $url URL to link to
 	 * @param-taint $url escapes_html
 	 * @param string $text Text of link
+	 * @param-taint $text none
 	 * @param bool $escape Do we escape the link text?
 	 * @param-taint $escape none
 	 * @param string $linktype Type of external link. Gets added to the classes
@@ -1137,47 +1138,21 @@ class Linker {
 	 * @param LinkTarget|null $title LinkTarget object used for title specific link attributes
 	 * @param-taint $title none
 	 * @return string
+	 * @deprecated since 1.43; use LinkRenderer::makeExternalLink(), passing
+	 *   in an HtmlArmor instance if $escape was false.
 	 */
 	public static function makeExternalLink( $url, $text, $escape = true,
 		$linktype = '', $attribs = [], $title = null
 	) {
 		global $wgTitle;
-		$class = 'external';
-		if ( $linktype ) {
-			$class .= " $linktype";
-		}
-		if ( isset( $attribs['class'] ) && $attribs['class'] ) {
-			$class .= " {$attribs['class']}";
-		}
-		$attribs['class'] = $class;
-
-		if ( $escape ) {
-			$text = htmlspecialchars( $text, ENT_COMPAT );
-		}
-
-		if ( !$title ) {
-			$title = $wgTitle;
-		}
-		$newRel = Parser::getExternalLinkRel( $url, $title );
-		if ( !isset( $attribs['rel'] ) || $attribs['rel'] === '' ) {
-			$attribs['rel'] = $newRel;
-		} elseif ( $newRel !== null ) {
-			// Merge the rel attributes.
-			$newRels = explode( ' ', $newRel );
-			$oldRels = explode( ' ', $attribs['rel'] );
-			$combined = array_unique( array_merge( $newRels, $oldRels ) );
-			$attribs['rel'] = implode( ' ', $combined );
-		}
-		$link = '';
-		$success = ( new HookRunner( MediaWikiServices::getInstance()->getHookContainer() ) )->onLinkerMakeExternalLink(
-			$url, $text, $link, $attribs, $linktype );
-		if ( !$success ) {
-			wfDebug( "Hook LinkerMakeExternalLink changed the output of link "
-				. "with url {$url} and text {$text} to {$link}" );
-			return $link;
-		}
-		$attribs['href'] = $url;
-		return Html::rawElement( 'a', $attribs, $text );
+		$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
+		return $linkRenderer->makeExternalLink(
+			$url,
+			$escape ? $text : new HtmlArmor( $text ),
+			$title ?? $wgTitle ?? SpecialPage::getTitleFor( 'Badtitle' ),
+			$linktype,
+			$attribs
+		);
 	}
 
 	/**
@@ -1741,7 +1716,7 @@ class Linker {
 			->getBoolOption( $context->getUser(), 'showrollbackconfirmation' )
 		) {
 			$services->getStatsFactory()
-				->getCounter( 'rollbaseconfirmation_event_load_total' )
+				->getCounter( 'rollbackconfirmation_event_load_total' )
 				->copyToStatsdAt( 'rollbackconfirmation.event.load' )
 				->increment();
 			$context->getOutput()->addModules( 'mediawiki.misc-authed-curate' );

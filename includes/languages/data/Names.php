@@ -127,8 +127,7 @@ class Names {
 		'ckb' => 'کوردی', # Central Kurdish
 		'co' => 'corsu', # Corsican
 		'cps' => 'Capiceño', # Capiznon
-		# Pu-Xian Min / Putian-Xianyou Min (multiple scripts - defaults to Traditional Han script)
-		'cpx' => '莆仙語 / Pó-sing-gṳ̂',
+		'cpx' => '莆仙語 / Pó-sing-gṳ̂', # Pu-Xian Min (multiple scripts - defaults to Traditional Han)
 		'cpx-hans' => '莆仙语（简体）', # Pu-Xian Min (Simplified Han script)
 		'cpx-hant' => '莆仙語（繁體）', # Pu-Xian Min (Traditional Han script)
 		'cpx-latn' => 'Pó-sing-gṳ̂ (Báⁿ-uā-ci̍)', # Pu-Xian Min (Latin script)
@@ -234,6 +233,7 @@ class Names {
 		'hyw' => 'Արեւմտահայերէն', # Western Armenian, T201276, T219975
 		'hz' => 'Otsiherero', # Herero
 		'ia' => 'interlingua', # Interlingua (IALA)
+		'iba' => 'Jaku Iban', # Iban
 		'ibb' => 'ibibio', # Ibibio
 		'id' => 'Bahasa Indonesia', # Indonesian
 		'ie' => 'Interlingue', # Interlingue (Occidental)
@@ -295,9 +295,7 @@ class Names {
 		'ksh' => 'Ripoarisch', # Ripuarian
 		'ksw' => 'စှီၤ', # S'gaw Karen
 		'ku' => 'kurdî', # Kurdish (multiple scripts - defaults to Latin)
-		# Note: The first word here is the same as the name of ckb.
-		# It should probably be made less ambiguous.
-		'ku-arab' => 'کوردی (عەرەبی)', # Northern Kurdish (Arabic script) (falls back to ckb)
+		'ku-arab' => 'کوردی (عەرەبی)', # Northern Kurdish (Arabic script) (falls back to ckb; see also T368698)
 		'ku-latn' => 'kurdî (latînî)', # Northern Kurdish (Latin script)
 		'kum' => 'къумукъ', # Kumyk (Cyrillic, 'kum-latn' for Latin script)
 		'kus' => 'Kʋsaal', # Kusaal
@@ -434,7 +432,6 @@ class Names {
 		'rup' => 'armãneashti', # Aromanian
 		'ruq' => 'Vlăheşte', # Megleno-Romanian (multiple scripts - defaults to Latin)
 		'ruq-cyrl' => 'Влахесте', # Megleno-Romanian (Cyrillic script)
-		# 'ruq-grek' => 'Βλαεστε', # Megleno-Romanian (Greek script)
 		'ruq-latn' => 'Vlăheşte', # Megleno-Romanian (Latin script)
 		'rut' => 'мыхаӀбишды', # Rutul
 		'rw' => 'Ikinyarwanda', # Kinyarwanda
@@ -499,7 +496,7 @@ class Names {
 		'ta' => 'தமிழ்', # Tamil
 		'tay' => 'Tayal', # Atayal
 		'tcy' => 'ತುಳು', # Tulu
-		'tdd' => 'ᥖᥭᥰᥖᥬᥳᥑᥨᥒᥰ', # Tai Nüa
+		'tdd' => 'ᥖᥭᥰ ᥖᥬᥲ ᥑᥨᥒᥰ', # Tai Nüa
 		'te' => 'తెలుగు', # Telugu
 		'tet' => 'tetun', # Tetun
 		'tg' => 'тоҷикӣ', # Tajiki (falls back to tg-cyrl)

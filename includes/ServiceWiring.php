@@ -127,6 +127,7 @@ use MediaWiki\Mail\EmailUserFactory;
 use MediaWiki\Mail\IEmailer;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use MediaWiki\Message\MessageFormatterFactory;
 use MediaWiki\OutputTransform\DefaultOutputPipelineFactory;
 use MediaWiki\OutputTransform\OutputTransformPipeline;
@@ -493,12 +494,13 @@ return [
 			$mainConfig->get( MainConfigNames::MainCacheType )
 		);
 
+		$objectCacheFactory = $services->getObjectCacheFactory();
 		if ( is_string( $cpStashType ) ) {
-			$cpStash = $services->getObjectCacheFactory()->getInstance( $cpStashType );
+			$cpStash = $objectCacheFactory->getInstance( $cpStashType );
 		} elseif ( $isMainCacheBad ) {
 			$cpStash = new EmptyBagOStuff();
 		} else {
-			$cpStash = ObjectCache::getLocalClusterInstance();
+			$cpStash = $objectCacheFactory->getLocalClusterInstance();
 		}
 
 		$chronologyProtector = new ChronologyProtector(
@@ -655,7 +657,7 @@ return [
 		// Setup salt cache. Use APC, or fallback to the main cache if it isn't setup
 		$cache = $services->getLocalServerObjectCache();
 		if ( $cache instanceof EmptyBagOStuff ) {
-			$cache = ObjectCache::getLocalClusterInstance();
+			$cache = $services->getObjectCacheFactory()->getLocalClusterInstance();
 		}
 
 		return new CryptHKDF( $secret, $config->get( MainConfigNames::HKDFAlgorithm ), $cache, $context );
@@ -758,13 +760,9 @@ return [
 
 	'DefaultOutputPipeline' => static function ( MediaWikiServices $services ): OutputTransformPipeline {
 		return ( new DefaultOutputPipelineFactory(
-			new ServiceOptions( DefaultOutputPipelineFactory::CONSTRUCTOR_OPTIONS, $services->getMainConfig() ),
-			$services->getHookContainer(),
-			$services->getTidy(),
-			$services->getLanguageFactory(),
-			$services->getContentLanguage(),
+			$services->getMainConfig(),
 			LoggerFactory::getInstance( 'Parser' ),
-			$services->getTitleFactory()
+			$services->getObjectFactory()
 		) )->buildPipeline();
 	},
 
@@ -1417,10 +1415,10 @@ return [
 
 	'PageEditStash' => static function ( MediaWikiServices $services ): PageEditStash {
 		return new PageEditStash(
-			ObjectCache::getLocalClusterInstance(),
+			$services->getObjectCacheFactory()->getLocalClusterInstance(),
 			$services->getConnectionProvider(),
 			LoggerFactory::getInstance( 'StashEdit' ),
-			$services->getStatsdDataFactory(),
+			$services->getStatsFactory(),
 			$services->getUserEditTracker(),
 			$services->getUserFactory(),
 			$services->getWikiPageFactory(),
@@ -1448,6 +1446,7 @@ return [
 			$services->getStatsdDataFactory(),
 			$services->getParserOutputAccess(),
 			$services->getParsoidOutputAccess(),
+			$services->getParsoidSiteConfig(),
 			$services->getHtmlTransformFactory(),
 			$services->getContentHandlerFactory(),
 			$services->getLanguageFactory(),
@@ -1744,7 +1743,7 @@ return [
 		return new Pingback(
 			$services->getMainConfig(),
 			$services->getConnectionProvider(),
-			ObjectCache::getLocalClusterInstance(),
+			$services->getObjectCacheFactory()->getLocalClusterInstance(),
 			$services->getHttpRequestFactory(),
 			LoggerFactory::getInstance( 'Pingback' )
 		);
@@ -1833,7 +1832,13 @@ return [
 	},
 
 	'RedirectStore' => static function ( MediaWikiServices $services ): RedirectStore {
-		return new RedirectStore( $services->getWikiPageFactory() );
+		return new RedirectStore(
+			$services->getConnectionProvider(),
+			$services->getPageStore(),
+			$services->getTitleParser(),
+			$services->getRepoGroup(),
+			LoggerFactory::getInstance( 'RedirectStore' )
+		);
 	},
 
 	'RepoGroup' => static function ( MediaWikiServices $services ): RepoGroup {
@@ -2081,7 +2086,7 @@ return [
 
 		$cache = $services->getLocalServerObjectCache();
 		if ( $cache instanceof EmptyBagOStuff ) {
-			$cache = ObjectCache::getLocalClusterInstance();
+			$cache = $services->getObjectCacheFactory()->getLocalClusterInstance();
 		}
 
 		return new CachingSiteStore( $rawSiteStore, $cache );
@@ -2265,14 +2270,14 @@ return [
 				$services->getMainConfig()->get( MainConfigNames::TempAccountCreationThrottle ),
 				[
 					'type' => 'tempacctcreate',
-					'cache' => ObjectCache::getLocalClusterInstance(),
+					'cache' => $services->getObjectCacheFactory()->getLocalClusterInstance(),
 				]
 			),
 			new Throttler(
 				$services->getMainConfig()->get( MainConfigNames::TempAccountNameAcquisitionThrottle ),
 				[
 					'type' => 'tempacctnameacquisition',
-					'cache' => ObjectCache::getLocalClusterInstance(),
+					'cache' => $services->getObjectCacheFactory()->getLocalClusterInstance(),
 				]
 			)
 		);
@@ -2453,7 +2458,8 @@ return [
 			LoggerFactory::getInstance( 'UserOptionsManager' ),
 			$services->getHookContainer(),
 			$services->getUserFactory(),
-			$services->getUserNameUtils()
+			$services->getUserNameUtils(),
+			$services->getObjectFactory()
 		);
 	},
 
@@ -2666,7 +2672,8 @@ return [
 			),
 			$services->getArchivedRevisionLookup(),
 			$services->getRestrictionStore(),
-			$services->getLinkTargetLookup()
+			$services->getLinkTargetLookup(),
+			$services->getRedirectStore()
 		);
 	},
 

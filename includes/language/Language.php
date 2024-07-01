@@ -43,6 +43,7 @@ use MediaWiki\Languages\LanguageNameUtils;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use MediaWiki\Parser\MagicWord;
 use MediaWiki\Title\NamespaceInfo;
 use MediaWiki\User\User;
@@ -4025,7 +4026,7 @@ class Language implements Bcp47Code {
 		} elseif ( $time !== strtotime( $str, $now + 1 ) ) { // It's a relative timestamp.
 			// The result differs based on current time, so the difference
 			// is a fixed duration length.
-			return $this->formatDuration( $time - $now );
+			return $this->formatDurationBetweenTimestamps( $time, $now );
 		} else { // It's an absolute timestamp.
 			if ( $time === 0 ) {
 				// wfTimestamp() handles 0 as current time instead of epoch.

@@ -57,10 +57,10 @@
 	 */
 	mw.widgets.APIResultsProvider.prototype.getResults = function () {
 		const deferred = $.Deferred(),
-			allParams = $.extend( {}, this.getStaticParams(), this.getUserParams() );
+			allParams = Object.assign( {}, this.getStaticParams(), this.getUserParams() );
 
 		const xhr = $.getJSON( this.getAPIurl(), allParams )
-			.done( function ( data ) {
+			.done( ( data ) => {
 				if ( Array.isArray( data ) && data.length ) {
 					deferred.resolve( data );
 				} else {
@@ -114,7 +114,7 @@
 	mw.widgets.APIResultsProvider.prototype.setUserParams = function ( params ) {
 		// Asymmetrically compare (params is subset of this.userParams)
 		if ( !OO.compare( params, this.userParams, true ) ) {
-			this.userParams = $.extend( {}, this.userParams, params );
+			this.userParams = Object.assign( {}, this.userParams, params );
 			this.reset();
 		}
 	};

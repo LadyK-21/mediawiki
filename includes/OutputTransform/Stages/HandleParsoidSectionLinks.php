@@ -7,6 +7,7 @@
 
 namespace MediaWiki\OutputTransform\Stages;
 
+use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\OutputTransform\ContentDOMTransformStage;
 use MediaWiki\Parser\ParserOutput;
@@ -24,11 +25,12 @@ use Wikimedia\Parsoid\Utils\DOMCompat;
  */
 class HandleParsoidSectionLinks extends ContentDOMTransformStage {
 
-	private LoggerInterface $logger;
 	private TitleFactory $titleFactory;
 
-	public function __construct( LoggerInterface $logger, TitleFactory $titleFactory ) {
-		$this->logger = $logger;
+	public function __construct(
+		ServiceOptions $options, LoggerInterface $logger, TitleFactory $titleFactory
+	) {
+		parent::__construct( $options, $logger );
 		$this->titleFactory = $titleFactory;
 	}
 
