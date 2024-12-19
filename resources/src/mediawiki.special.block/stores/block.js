@@ -12,6 +12,13 @@ module.exports = exports = defineStore( 'block', () => {
 	// TODO: Rid of the `mw.config.get( 'whatever' )` atrocity once we have Codex PHP (T377529)
 
 	/**
+	 * Whether the multiblocks feature is enabled with $wgEnableMultiBlocks.
+	 *
+	 * @type {boolean}
+	 */
+	const enableMultiblocks = mw.config.get( 'blockEnableMultiblocks' ) || false;
+
+	/**
 	 * The target user to block. Beyond the initial value,
 	 * this is set only by the UserLookup component.
 	 *
@@ -248,8 +255,13 @@ module.exports = exports = defineStore( 'block', () => {
 	 * Load block data from an action=blocks API response.
 	 *
 	 * @param {Object} blockData The block's item from the API.
+	 * @param {boolean} [loadingFromParam=false] Whether the data is being loaded from URL parameters.
 	 */
-	function loadFromData( blockData ) {
+	function loadFromData( blockData, loadingFromParam = false ) {
+		if ( loadingFromParam ) {
+			targetUser.value = blockData.user;
+			formVisible.value = true;
+		}
 		blockId.value = blockData.id;
 		type.value = blockData.partial ? 'partial' : 'sitewide';
 		pages.value = ( blockData.restrictions.pages || [] ).map( ( i ) => i.title );
@@ -314,12 +326,15 @@ module.exports = exports = defineStore( 'block', () => {
 	/**
 	 * Clear form behavioural refs.
 	 *
+	 * @param {boolean} [loadingFromParam=false] Whether the data is being loaded from URL parameters.
 	 * @internal
 	 */
-	function resetFormInternal() {
+	function resetFormInternal( loadingFromParam = false ) {
 		formErrors.value = [];
 		formSubmitted.value = false;
-		formVisible.value = false;
+		if ( !loadingFromParam ) {
+			formVisible.value = false;
+		}
 		success.value = false;
 		alreadyBlocked.value = false;
 		promises.value.clear();
@@ -342,8 +357,17 @@ module.exports = exports = defineStore( 'block', () => {
 			errorsuselocal: true
 		};
 
-		if ( alreadyBlocked.value ) {
+		if ( !enableMultiblocks && alreadyBlocked.value ) {
 			params.reblock = 1;
+		}
+
+		if ( enableMultiblocks ) {
+			if ( blockId.value ) {
+				params.id = blockId.value;
+				delete params.user;
+			} else {
+				params.newblock = 1;
+			}
 		}
 
 		// Reason selected concatenated with 'Other' field
@@ -480,6 +504,7 @@ module.exports = exports = defineStore( 'block', () => {
 	}
 
 	return {
+		enableMultiblocks,
 		formDisabled,
 		formErrors,
 		formSubmitted,
