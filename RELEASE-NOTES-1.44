@@ -102,6 +102,7 @@ For notes on 1.43.x and older releases, see HISTORY.
 ===== Changed development-only external libraries =====
 * Updated nikic/php-parser from ^4.10.2 to ^5.3.1.
 * Updated phpunit/phpunit from 9.6.19 to 9.6.21.
+* Updated stylelint-config-wikimedia from v0.17.2 to v0.18.0.
 * …
 
 ==== Removed external libraries ====
@@ -188,6 +189,9 @@ because of Phabricator reports.
   purgeTagCacheAll(), tagUsageStatistics(), and updateTags().
 * WikiPage::doEditUpdates(), deprecated since 1.32, is now emitting warnings.
   Use DerivedPageDataUpdater::doUpdates() instead.
+* IDatabase::setTransactionListener() is now deprecated without replacement.
+* ILBFactory::setWaitForReplicationListener() is now deprecated without
+  replacement.
 * Maintenance::beginTransaction(), Maintenance::commitTransaction(),
   Maintenance::rollbackTransaction(), and Maintenance::waitForReplication()
   are now deprecated. Use Maintenance::*TransactionRound() instead.

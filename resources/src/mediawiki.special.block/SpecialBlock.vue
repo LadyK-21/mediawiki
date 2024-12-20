@@ -1,6 +1,6 @@
 <template>
 	<!-- @todo Remove after it's no longer new. -->
-	<cdx-message v-if="blockEnableMultiblocks" allow-user-dismiss>
+	<cdx-message v-if="enableMultiblocks" allow-user-dismiss>
 		{{ $i18n( 'block-multiblocks-new-feature' ) }}
 	</cdx-message>
 	<cdx-field
@@ -34,7 +34,7 @@
 			v-model="store.targetUser"
 		></user-lookup>
 
-		<div v-if="store.targetUser">
+		<div v-if="showBlockLogs">
 			<block-log
 				:key="`${submitCount}-active`"
 				:open="success"
@@ -55,7 +55,7 @@
 				:can-delete-log-entry="canDeleteLogEntry"
 			></block-log>
 
-			<div v-if="formVisible" class="mw-block__block-form">
+			<div v-if="showBlockForm" class="mw-block__block-form">
 				<block-type-field></block-type-field>
 				<expiry-field></expiry-field>
 				<reason-field
@@ -123,19 +123,40 @@ module.exports = exports = defineComponent( {
 	},
 	setup() {
 		const store = useBlockStore();
-		const blockEnableMultiblocks = mw.config.get( 'blockEnableMultiblocks' ) || false;
 		const blockShowSuppressLog = mw.config.get( 'blockShowSuppressLog' ) || false;
 		const canDeleteLogEntry = mw.config.get( 'canDeleteLogEntry' ) || false;
-		const { formErrors, formSubmitted, formVisible, success } = storeToRefs( store );
+		const { formErrors, formSubmitted, formVisible, success, enableMultiblocks } = storeToRefs( store );
 		const messagesContainer = ref();
 		// Value to use for BlockLog component keys, so they reload after saving.
 		const submitCount = ref( 0 );
-		// eslint-disable-next-line arrow-body-style
 		const submitButtonMessage = computed( () => {
-			return mw.message( store.alreadyBlocked ? 'block-update' : 'ipbsubmit' ).text();
+			if ( ( !store.enableMultiblocks && store.alreadyBlocked ) ||
+				( store.enableMultiblocks && store.blockId )
+			) {
+				return mw.message( 'block-update' ).text();
+			}
+			return mw.message( 'ipbsubmit' ).text();
 		} );
 		const confirmationOpen = ref( false );
+		const blockId = computed( () => mw.util.getParamValue( 'id' ) );
+		const showBlockLogs = computed( () => store.targetUser || store.blockId );
+		const showBlockForm = computed( () => formVisible.value || blockId.value );
 		let initialLoad = true;
+
+		if ( blockId.value ) {
+			loadFromIdParam().then( ( data ) => {
+				if ( data && data.blocks.length ) {
+					// Load the block form content.
+					const block = data.blocks[ 0 ];
+					store.loadFromData( block, true );
+					formVisible.value = true;
+					scrollToForm();
+				} else {
+					// If the block ID is invalid, show an error message.
+					formErrors.value = [ mw.msg( 'block-invalid-id' ) ];
+				}
+			} );
+		}
 
 		/**
 		 * Show the form for a new block.
@@ -158,7 +179,7 @@ module.exports = exports = defineComponent( {
 		 * @param {Object} blockData
 		 */
 		function onEditBlock( blockData ) {
-			store.loadFromData( blockData );
+			store.loadFromData( blockData, false );
 			formVisible.value = true;
 			scrollToForm();
 		}
@@ -195,7 +216,6 @@ module.exports = exports = defineComponent( {
 					return;
 				}
 				doBlock();
-				formVisible.value = false;
 			} else {
 				// nextTick() needed to ensure error messages are rendered before scrolling.
 				nextTick( () => {
@@ -211,17 +231,42 @@ module.exports = exports = defineComponent( {
 		}
 
 		/**
+		 * Load the block form content from the 'id' URL parameter.
+		 *
+		 * @return {Promise<Object>} A promise that resolves to the block query response.
+		 */
+		function loadFromIdParam() {
+			const params = {
+				action: 'query',
+				list: 'blocks',
+				bkids: mw.util.getParamValue( 'id' ),
+				formatversion: 2,
+				format: 'json',
+				bkprop: 'id|user|by|timestamp|expiry|reason|range|flags|restrictions'
+			};
+			const api = new mw.Api();
+			return api.get( params ).then( ( response ) => response.query );
+		}
+
+		/**
 		 * Execute the block request, set the success state and form errors,
 		 * and scroll to the messages container.
 		 */
 		function doBlock() {
 			store.doBlock()
-				.done( () => {
+				.done( ( result ) => {
+					// Set the target user to the user that was blocked.
+					// This is primarily for the log entries when blocking a range.
+					if ( result.block && result.block.user ) {
+						store.targetUser = result.block.user;
+					}
 					success.value = true;
 					formErrors.value = [];
 					// Bump the submitCount (to re-render the logs) after scrolling
 					// because the log tables may change the length of the page.
 					submitCount.value++;
+					// Hide the form if the block was successful.
+					formVisible.value = false;
 				} )
 				.fail( ( _, errorObj ) => {
 					formErrors.value = [ errorObj.error.info ];
@@ -240,15 +285,16 @@ module.exports = exports = defineComponent( {
 			success,
 			submitCount,
 			submitButtonMessage,
-			blockEnableMultiblocks,
+			enableMultiblocks,
 			blockShowSuppressLog,
 			canDeleteLogEntry,
 			confirmationOpen,
-			formVisible,
 			onCreateBlock,
 			onEditBlock,
 			onFormSubmission,
-			doBlock
+			doBlock,
+			showBlockLogs,
+			showBlockForm
 		};
 	}
 } );

@@ -696,7 +696,10 @@ return [
 
 	'DatabaseFactory' => static function ( MediaWikiServices $services ): DatabaseFactory {
 		return new DatabaseFactory(
-			[ 'debugSql' => $services->getMainConfig()->get( MainConfigNames::DebugDumpSql ) ]
+			[
+				'debugSql' => $services->getMainConfig()->get( MainConfigNames::DebugDumpSql ),
+				'tracer' => $services->getTracer(),
+			]
 		);
 	},
 
@@ -721,17 +724,6 @@ return [
 		$instance = new $class( $lbConf );
 
 		$lbFactoryConfigBuilder->setDomainAliases( $instance );
-
-		// NOTE: This accesses ProxyLookup from the MediaWikiServices singleton
-		// for non-essential non-nonimal purposes (via WebRequest::getIP).
-		// This state is fine (and meant) to be consistent for a given PHP process,
-		// even if applied to the service container for a different wiki.
-		$lbFactoryConfigBuilder->applyGlobalState(
-			$instance,
-			$mainConfig,
-			$services->getStatsdDataFactory(),
-			$services->getStatsFactory()
-		);
 
 		return $instance;
 	},
@@ -762,7 +754,8 @@ return [
 			$wanCache,
 			$services->getCriticalSectionProvider(),
 			$services->getStatsdDataFactory(),
-			ExtensionRegistry::getInstance()->getAttribute( 'DatabaseVirtualDomains' )
+			ExtensionRegistry::getInstance()->getAttribute( 'DatabaseVirtualDomains' ),
+			$services->getTracer(),
 		);
 	},
 
