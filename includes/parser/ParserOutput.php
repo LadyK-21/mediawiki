@@ -1,4 +1,6 @@
 <?php
+declare( strict_types = 1 );
+
 /**
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,12 +30,14 @@ use MediaWiki\Json\JsonDeserializableTrait;
 use MediaWiki\Json\JsonDeserializer;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Parser\Parsoid\PageBundleParserOutputConverter;
 use MediaWiki\Title\TitleValue;
 use UnexpectedValueException;
 use Wikimedia\Bcp47Code\Bcp47Code;
 use Wikimedia\Bcp47Code\Bcp47CodeValue;
+use Wikimedia\Message\MessageSpecifier;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\Parsoid\Core\ContentMetadataCollector;
 use Wikimedia\Parsoid\Core\ContentMetadataCollectorCompat;
@@ -241,13 +245,13 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	/**
 	 * @var array<string,int> Warning text to be returned to the user.
 	 *  Wikitext formatted, in the key only.
+	 * @deprecated since 1.45; use ::$mWarningMsgs instead
 	 */
 	private $mWarnings = [];
 
 	/**
-	 * @var array<string,array> *Unformatted* warning messages and
-	 * arguments to be returned to the user.  This is for internal use
-	 * when merging ParserOutputs and are not serialized/deserialized.
+	 * @var array<string,MessageValue> *Unformatted* warning messages and
+	 * arguments to be returned to the user.
 	 */
 	private $mWarningMsgs = [];
 
@@ -298,7 +302,7 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	private $mCacheMessage = '';
 
 	/**
-	 * @var array Timestamps for getTimeSinceStart().
+	 * @var array Timestamps for getTimeProfile().
 	 */
 	private $mParseStartTime = [];
 
@@ -378,16 +382,13 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	 * @param bool $unused
 	 * @param string $titletext
 	 */
-	public function __construct( $text = null, $languageLinks = [], $categoryLinks = [],
+	public function __construct( ?string $text = null, array $languageLinks = [], array $categoryLinks = [],
 		$unused = false, $titletext = ''
 	) {
 		$this->mRawText = $text;
 		$this->mCategories = $categoryLinks;
 		$this->mTitleText = $titletext;
-		if ( $languageLinks === null ) { // T376323
-			wfDeprecated( __METHOD__ . ' with null $languageLinks', '1.43' );
-		}
-		foreach ( ( $languageLinks ?? [] ) as $ll ) {
+		foreach ( $languageLinks as $ll ) {
 			$this->addLanguageLink( $ll );
 		}
 		// If the content handler does not specify an alternative (by
@@ -986,8 +987,16 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 		return $result;
 	}
 
+	/** @deprecated since 1.45; use ::getWarningMsgs. */
 	public function getWarnings(): array {
+		// T343048: Don't emit deprecation warnings here until the
+		// compatibility fallback in ApiParse is removed.
 		return array_keys( $this->mWarnings );
+	}
+
+	/** @return list<MessageValue> */
+	public function getWarningMsgs(): array {
+		return array_values( $this->mWarningMsgs );
 	}
 
 	public function getIndexPolicy(): string {
@@ -1086,6 +1095,7 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	 * @deprecated since 1.42, use ::addLanguageLink() instead.
 	 */
 	public function setLanguageLinks( $ll ) {
+		wfDeprecated( __METHOD__, '1.42' );
 		$old = $this->getLanguageLinks();
 		$this->mLanguageLinkMap = [];
 		if ( $ll === null ) { // T376323
@@ -1095,6 +1105,11 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 			$this->addLanguageLink( $l );
 		}
 		return $old;
+	}
+
+	/** @internal For use by OutputPage only. */
+	public function clearLanguageLinks(): void {
+		$this->mLanguageLinkMap = [];
 	}
 
 	public function setTitleText( $t ) {
@@ -1237,12 +1252,28 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 
 	/**
 	 * Add a warning to the output for this page.
-	 * @param MessageValue $mv
+	 * @param MessageSpecifier $mv
+	 * @param ?string $key An optional deduplication key, used to prevent
+	 *  duplicate messages.  If omitted or null, the MessageValue key will
+	 *  be used for deduplication.
 	 * @since 1.43
 	 */
-	public function addWarningMsgVal( MessageValue $mv ) {
-		// These can eventually be stored as MessageValue directly.
-		$this->addWarningMsg( $mv->getKey(), ...$mv->getParams() );
+	public function addWarningMsgVal( MessageSpecifier $mv, ?string $key = null ) {
+		$mv = MessageValue::newFromSpecifier( $mv );
+		$key ??= $mv->getKey();
+		$this->mWarningMsgs[$key] = $mv;
+		// Ensure callers aren't passing nonserializable arguments: T343048.
+		$jsonCodec = MediaWikiServices::getInstance()->getJsonCodec();
+		$path = $jsonCodec->detectNonSerializableData( $mv, true );
+		if ( $path !== null ) {
+			throw new InvalidArgumentException( __METHOD__ . ": nonserializable" );
+		}
+		// For backward compatibility with callers of ::getWarnings()
+		$s = Message::newFromSpecifier( $mv )
+			// some callers set the title here?
+			->inContentLanguage() // because this ends up in cache
+			->text();
+		$this->mWarnings[$s] = 1;
 	}
 
 	/**
@@ -1254,29 +1285,10 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	 * @since 1.38
 	 */
 	public function addWarningMsg( string $msg, ...$args ): void {
-		// MessageValue objects are defined in core and thus not visible
-		// to Parsoid or to its ContentMetadataCollector interface.
-		// Eventually this method (defined in ContentMetadataCollector) should
-		// call ::addWarningMsgVal() instead of the other way around.
-
-		// preserve original arguments in $mWarningMsgs to allow merge
-		// @todo: these aren't serialized/deserialized yet -- before we
-		// turn on serialization of $this->mWarningMsgs we need to ensure
-		// callers aren't passing nonserializable arguments: T343048.
-		$jsonCodec = MediaWikiServices::getInstance()->getJsonCodec();
-		$path = $jsonCodec->detectNonSerializableData( $args, true );
-		if ( $path !== null ) {
-			wfDeprecatedMsg(
-				"ParserOutput::addWarningMsg() called with nonserializable arguments: $path",
-				'1.41'
-			);
-		}
-		$this->mWarningMsgs[$msg] = $args;
-		$s = wfMessage( $msg, ...$args )
-			// some callers set the title here?
-			->inContentLanguage() // because this ends up in cache
-			->text();
-		$this->mWarnings[$s] = 1;
+		// T227447: Once MessageSpecifier is moved to a library, Parsoid would
+		// be able to use ::addWarningMsgVal() directly and this method
+		// could be deprecated and removed.
+		$this->addWarningMsgVal( MessageValue::new( $msg, $args ) );
 	}
 
 	public function setNewSection( $value ): void {
@@ -1395,8 +1407,7 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	public function addTemplate( $link, $page_id, $rev_id ): void {
 		if ( $link->isExternal() ) {
 			// Will throw an InvalidArgumentException in a future release.
-			wfDeprecated( __METHOD__ . " with interwiki link", '1.42' );
-			return;
+			throw new InvalidArgumentException( __METHOD__ . " with interwiki link" );
 		}
 		$ns = $link->getNamespace();
 		$dbk = $link->getDBkey();
@@ -1823,30 +1834,20 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	 *    $output->getExtensionData( 'my_ext_foo' );
 	 * @endcode
 	 *
-	 * @note The use of `null` as a value is deprecated since 1.42; use
+	 * @note The use of `null` as a value was deprecated in 1.42; use
 	 * the empty string instead if you need a placeholder value, or
 	 * ::unsetPageProperty() if you mean to remove a page property.
 	 *
-	 * @note The use of non-string values is deprecated since 1.42; if you
+	 * @note The use of non-string values was deprecated in 1.42; if you
 	 * need an page property value with a sort index
 	 * use ::setNumericPageProperty().
 	 *
 	 * @param string $name
-	 * @param ?scalar $value
+	 * @param string $value
 	 * @since 1.38
 	 */
-	public function setPageProperty( string $name, $value ): void {
-		if ( $value === null ) {
-			// Use an empty string instead.
-			wfDeprecated( __METHOD__ . " with null value for $name", '1.42' );
-		} elseif ( !is_scalar( $value ) ) {
-			// Use ::setExtensionData() instead.
-			wfDeprecated( __METHOD__ . " with non-scalar value for $name", '1.42' );
-		} elseif ( !is_string( $value ) ) {
-			// Use ::setNumericPageProperty() instead.
-			wfDeprecated( __METHOD__ . " with non-string value for $name", '1.42' );
-		}
-		$this->mProperties[$name] = $value;
+	public function setPageProperty( string $name, string $value ): void {
+		$this->setUnsortedPageProperty( $name, $value );
 	}
 
 	/**
@@ -2244,7 +2245,7 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	}
 
 	/**
-	 * Resets the parse start timestamps for future calls to getTimeSinceStart()
+	 * Resets the parse start timestamps for future calls to getTimeProfile()
 	 * and recordTimeProfile().
 	 *
 	 * @since 1.22
@@ -2314,29 +2315,6 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	 */
 	public function getTimeProfile( string $clock ) {
 		return $this->mTimeProfile[ $clock ] ?? null;
-	}
-
-	/**
-	 * Returns the time since resetParseStartTime() was last called
-	 *
-	 * Clocks available are:
-	 *  - wall: Wall clock time
-	 *  - cpu: CPU time (requires getrusage)
-	 *
-	 * @since 1.22
-	 * @deprecated since 1.42, use getTimeProfile() instead.
-	 * @param string $clock
-	 * @return float|null
-	 */
-	public function getTimeSinceStart( $clock ) {
-		wfDeprecated( __METHOD__, '1.42' );
-
-		if ( !isset( $this->mParseStartTime[$clock] ) ) {
-			return null;
-		}
-
-		$end = self::getTimes( $clock );
-		return $end[$clock] - $this->mParseStartTime[$clock];
 	}
 
 	/**
@@ -2558,6 +2536,7 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	 */
 	public function mergeInternalMetaDataFrom( ParserOutput $source ): void {
 		$this->mWarnings = self::mergeMap( $this->mWarnings, $source->mWarnings ); // don't use getter
+		$this->mWarningMsgs = self::mergeMap( $this->mWarningMsgs, $source->mWarningMsgs );
 		$this->mTimestamp = $this->useMaxValue( $this->mTimestamp, $source->getRevisionTimestamp() );
 		if ( $source->hasCacheTime() ) {
 			$sourceCacheTime = $source->getCacheTime();
@@ -2891,11 +2870,11 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 			} else {
 				// Deprecated, but there are still sites which call
 				// ::setPageProperty() with "unusual" values (T374046)
-				$metadata->setPageProperty( $prop, $value );
+				wfDeprecated( __METHOD__ . ' with unusual page property', '1.45' );
 			}
 		}
-		foreach ( $this->mWarningMsgs as $msg => $args ) {
-			$metadata->addWarningMsg( $msg, ...$args );
+		foreach ( $this->mWarningMsgs as $key => $msg ) {
+			$metadata->addWarningMsgVal( $msg, $key );
 		}
 		foreach ( $this->mLimitReportData as $key => $value ) {
 			$metadata->setLimitReportData( $key, $value );
@@ -3080,6 +3059,7 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 			'ModuleStyles' => array_keys( $this->mModuleStyleSet ),
 			'JsConfigVars' => $this->mJsConfigVars,
 			'Warnings' => $this->mWarnings,
+			'WarningMsgs' => $this->mWarningMsgs,
 			'Sections' => $this->getSections(),
 			'Properties' => self::detectAndEncodeBinary( $this->mProperties ),
 			'Timestamp' => $this->mTimestamp,
@@ -3172,7 +3152,8 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 		$this->mModuleSet = array_fill_keys( $jsonData['Modules'], true );
 		$this->mModuleStyleSet = array_fill_keys( $jsonData['ModuleStyles'], true );
 		$this->mJsConfigVars = $jsonData['JsConfigVars'];
-		$this->mWarnings = $jsonData['Warnings'];
+		$this->mWarnings = $jsonData['Warnings'] ?? [];
+		$this->mWarningMsgs = $jsonData['WarningMsgs'] ?? [];
 		$this->mFlags = $jsonData['Flags'];
 		if (
 			$jsonData['Sections'] !== [] ||
@@ -3189,7 +3170,26 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 				}
 			}
 		}
-		$this->mProperties = self::detectAndDecodeBinary( $jsonData['Properties'] );
+		// backward-compatibility: convert page properties to their
+		// 'database representation'.  We haven't permitted non-string
+		// non-numeric values since 1.45.
+		$this->mProperties = [];
+		foreach (
+			self::detectAndDecodeBinary( $jsonData['Properties'] )
+			as $k => $v
+		) {
+			if ( is_int( $v ) || is_float( $v ) || is_string( $v ) ) {
+				$this->mProperties[$k] = $v;
+			} elseif ( is_bool( $v ) ) {
+				$this->mProperties[$k] = (int)$v;
+			} elseif ( $v === null ) {
+				$this->mProperties[$k] = '';
+			} elseif ( is_array( $v ) ) {
+				$this->mProperties[$k] = 'Array';
+			} else {
+				$this->mProperties[$k] = strval( $v );
+			}
+		}
 		$this->mTimestamp = $jsonData['Timestamp'];
 		$this->mEnableOOUI = $jsonData['EnableOOUI'];
 		$this->setIndexPolicy( $jsonData['IndexPolicy'] );
@@ -3295,33 +3295,6 @@ class ParserOutput extends CacheTime implements ContentMetadataCollector {
 	 */
 	public function setContentHolderText( string $s ): void {
 		$this->setRawText( $s );
-	}
-
-	public function __get( $name ) {
-		if ( property_exists( get_called_class(), $name ) ) {
-			// Direct access to a public property, deprecated.
-			wfDeprecatedMsg( "ParserOutput::{$name} public read access deprecated", '1.38' );
-			return $this->$name;
-		} elseif ( property_exists( $this, $name ) ) {
-			// Dynamic property access, deprecated.
-			wfDeprecatedMsg( "ParserOutput::{$name} dynamic property read access deprecated", '1.38' );
-			return $this->$name;
-		} else {
-			trigger_error( "Inaccessible property via __get(): $name" );
-			return null;
-		}
-	}
-
-	public function __set( $name, $value ) {
-		if ( property_exists( get_called_class(), $name ) ) {
-			// Direct access to a public property, deprecated.
-			wfDeprecatedMsg( "ParserOutput::$name public write access deprecated", '1.38' );
-			$this->$name = $value;
-		} else {
-			// Dynamic property access, deprecated.
-			wfDeprecatedMsg( "ParserOutput::$name dynamic property write access deprecated", '1.38' );
-			$this->$name = $value;
-		}
 	}
 }
 

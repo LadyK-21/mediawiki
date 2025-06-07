@@ -82,30 +82,37 @@ class RollbackAction extends FormAction {
 		$this->commentFormatter = $commentFormatter;
 	}
 
+	/** @inheritDoc */
 	public function getName() {
 		return 'rollback';
 	}
 
+	/** @inheritDoc */
 	public function getRestriction() {
 		return 'rollback';
 	}
 
+	/** @inheritDoc */
 	protected function usesOOUI() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	protected function getDescription() {
 		return '';
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function onSuccess() {
 		return false;
 	}
 
+	/** @inheritDoc */
 	public function onSubmit( $data ) {
 		return false;
 	}
@@ -244,6 +251,7 @@ class RollbackAction extends FormAction {
 
 		$currentUser = $current->getUser( RevisionRecord::FOR_THIS_USER, $user );
 		$targetUser = $target->getUser( RevisionRecord::FOR_THIS_USER, $user );
+		$userOptionsLookup = $this->userOptionsLookup;
 		$this->getOutput()->addHTML(
 			$this->msg( 'rollback-success' )
 				->rawParams( $old, $new )
@@ -263,14 +271,18 @@ class RollbackAction extends FormAction {
 			'wgPostEditConfirmationDisabled' => true,
 		] );
 
-		if ( $this->userOptionsLookup->getBoolOption( $user, 'watchrollback' ) ) {
-			$this->watchlistManager->addWatchIgnoringRights( $user, $this->getTitle() );
+		// Watch the page for the user-chosen period of time, unless the page is already watched.
+		if ( $userOptionsLookup->getBoolOption( $user, 'watchrollback' ) &&
+			!$this->watchlistManager->isWatchedIgnoringRights( $user, $this->getTitle() )
+		) {
+			$this->watchlistManager->addWatchIgnoringRights( $user, $this->getTitle(),
+				$userOptionsLookup->getOption( $user, 'watchrollback-expiry' ) );
 		}
 
 		$this->getOutput()->returnToMain( false, $this->getTitle() );
 
 		if ( !$request->getBool( 'hidediff', false ) &&
-			!$this->userOptionsLookup->getBoolOption( $this->getUser(), 'norollbackdiff' )
+			!$userOptionsLookup->getBoolOption( $this->getUser(), 'norollbackdiff' )
 		) {
 			$contentModel = $current->getMainContentModel();
 			$contentHandler = $this->contentHandlerFactory->getContentHandler( $contentModel );
@@ -315,6 +327,7 @@ class RollbackAction extends FormAction {
 		}
 	}
 
+	/** @inheritDoc */
 	protected function getFormFields() {
 		return [
 			'intro' => [
