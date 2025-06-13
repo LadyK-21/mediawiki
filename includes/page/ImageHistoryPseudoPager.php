@@ -124,7 +124,7 @@ class ImageHistoryPseudoPager extends ReverseChronologicalPager {
 		if ( count( $this->mHist ) ) {
 			if ( $this->mImg->isLocal() ) {
 				// Do a batch existence check for user pages and talkpages.
-				$linkBatch = $this->linkBatchFactory->newLinkBatch();
+				$linkBatch = $this->linkBatchFactory->newLinkBatch()->setCaller( __METHOD__ );
 				for ( $i = $this->mRange[0]; $i <= $this->mRange[1]; $i++ ) {
 					$file = $this->mHist[$i];
 					$uploader = $file->getUploader( File::FOR_THIS_USER, $this->getAuthority() );
@@ -195,7 +195,7 @@ class ImageHistoryPseudoPager extends ReverseChronologicalPager {
 		if ( $this->mOffset !== null ) {
 			try {
 				$this->mDb->timestamp( $this->mOffset );
-			} catch ( TimestampException $e ) {
+			} catch ( TimestampException ) {
 				$this->mOffset = null;
 			}
 		}

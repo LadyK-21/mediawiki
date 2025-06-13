@@ -599,7 +599,7 @@ class MessageCache implements LoggerAwareInterface {
 				$text = $this->getMessageTextFromContent( $content );
 			} catch ( TimeoutException $e ) {
 				throw $e;
-			} catch ( Exception $ex ) {
+			} catch ( Exception ) {
 				$text = false;
 			}
 
@@ -997,7 +997,7 @@ class MessageCache implements LoggerAwareInterface {
 			// Fix numerical strings that somehow become ints on their way here
 			$key = (string)$key;
 		} elseif ( !is_string( $key ) ) {
-			throw new TypeError( 'Message key must be a string' );
+			throw new InvalidArgumentException( 'Message key must be a string' );
 		} elseif ( $key === '' ) {
 			// Shortcut: the empty key is always missing
 			return false;
@@ -1289,7 +1289,7 @@ class MessageCache implements LoggerAwareInterface {
 			// Message page exists as an override of a software messages
 			if ( substr( $entry, 0, 1 ) === ' ' ) {
 				// The message exists and is not '!TOO BIG' or '!ERROR'
-				return (string)substr( $entry, 1 );
+				return substr( $entry, 1 );
 			} elseif ( $entry === '!NONEXISTENT' ) {
 				// The text might be '-' or missing due to some data loss
 				return false;
@@ -1338,7 +1338,7 @@ class MessageCache implements LoggerAwareInterface {
 				$this->cache->setField( $code, $title, $entry );
 			}
 			// The message exists, so make sure a string is returned
-			return (string)substr( $entry, 1 );
+			return substr( $entry, 1 );
 		}
 
 		$this->cache->setField( $code, $title, '!NONEXISTENT' );

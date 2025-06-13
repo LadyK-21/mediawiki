@@ -1605,7 +1605,11 @@ class OutputPage extends ContextSource {
 	 * or replace language links from the output page.
 	 */
 	public function setLanguageLinks( array $newLinkArray ) {
-		$this->metadata->setLanguageLinks( $newLinkArray );
+		wfDeprecated( __METHOD__, '1.43' );
+		$this->metadata->clearLanguageLinks();
+		foreach ( $newLinkArray as $l ) {
+			$this->metadata->addLanguageLink( $l );
+		}
 	}
 
 	/**
@@ -2203,11 +2207,13 @@ class OutputPage extends ContextSource {
 	 *   the <div> wrapper in the output HTML, should not be empty
 	 * @param string $text Wikitext in the user interface language
 	 * @since 1.32
+	 * @deprecated since 1.45 Use wrapWikiMsg() or addWikiTextAsInterface() instead
 	 * @phan-param non-empty-string $wrapperClass
 	 */
 	public function wrapWikiTextAsInterface(
 		$wrapperClass, $text
 	) {
+		wfDeprecated( __METHOD__, '1.45' );
 		if ( $wrapperClass === '' ) {
 			// I don't think anyone actually uses this corner case,
 			// but if you call wrapWikiTextAsInterface with
@@ -2521,7 +2527,10 @@ class OutputPage extends ContextSource {
 		$languageLinks = $this->metadata->getLanguageLinks();
 		// This hook can be used to remove/replace language links
 		$this->getHookRunner()->onLanguageLinks( $this->getTitle(), $languageLinks, $linkFlags );
-		$this->metadata->setLanguageLinks( $languageLinks );
+		$this->metadata->clearLanguageLinks();
+		foreach ( ( $languageLinks ?? [] ) as $l ) {
+			$this->metadata->addLanguageLink( $l );
+		}
 
 		$this->getHookRunner()->onOutputPageParserOutput( $this, $parserOutput );
 

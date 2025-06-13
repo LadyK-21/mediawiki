@@ -648,7 +648,7 @@ class SpecialUndelete extends SpecialPage {
 				RevisionRecord::FOR_THIS_USER,
 				$user
 			);
-		} catch ( RevisionAccessException $e ) {
+		} catch ( RevisionAccessException ) {
 			$content = null;
 		}
 
@@ -714,7 +714,7 @@ class SpecialUndelete extends SpecialPage {
 				$out->addParserOutput( $pout, $popts, [
 					'enableSectionEditLinks' => false,
 				] );
-			} catch ( RevisionAccessException $e ) {
+			} catch ( RevisionAccessException ) {
 			}
 		}
 
@@ -864,7 +864,7 @@ class SpecialUndelete extends SpecialPage {
 		foreach ( $tagIds as $tagId ) {
 			try {
 				$tags[] = $this->changeTagDefStore->getName( (int)$tagId );
-			} catch ( NameTableAccessException $exception ) {
+			} catch ( NameTableAccessException ) {
 				continue;
 			}
 		}
@@ -981,7 +981,7 @@ class SpecialUndelete extends SpecialPage {
 			$extraConds,
 			self::REVISION_HISTORY_LIMIT + 1
 		);
-		$batch = $this->linkBatchFactory->newLinkBatch();
+		$batch = $this->linkBatchFactory->newLinkBatch()->setCaller( __METHOD__ );
 		$this->addRevisionsToBatch( $batch, $revisions );
 		$batch->execute();
 		$out->addHTML( $this->formatRevisionHistory( $revisions ) );
@@ -1059,7 +1059,7 @@ class SpecialUndelete extends SpecialPage {
 
 		# Batch existence check on user and talk pages
 		if ( $haveRevisions || $haveFiles ) {
-			$batch = $this->linkBatchFactory->newLinkBatch();
+			$batch = $this->linkBatchFactory->newLinkBatch()->setCaller( __METHOD__ );
 			$this->addRevisionsToBatch( $batch, $revisions );
 			if ( $haveFiles ) {
 				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable -- $files is non-null

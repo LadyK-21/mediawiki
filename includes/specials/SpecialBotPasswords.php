@@ -221,7 +221,7 @@ class SpecialBotPasswords extends FormSpecialPage {
 					$password = $this->passwordFactory->newFromCiphertext( $row->bp_password );
 					$passwordInvalid = $password instanceof InvalidPassword;
 					unset( $password );
-				} catch ( PasswordError $ex ) {
+				} catch ( PasswordError ) {
 					$passwordInvalid = true;
 				}
 
@@ -436,6 +436,14 @@ class SpecialBotPasswords extends FormSpecialPage {
 
 	protected function getDisplayFormat() {
 		return 'ooui';
+	}
+
+	/**
+	 * @codeCoverageIgnore Merely declarative
+	 * @inheritDoc
+	 */
+	public function doesWrites() {
+		return true;
 	}
 }
 

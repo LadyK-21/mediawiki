@@ -1191,6 +1191,7 @@ class OutputPageTest extends MediaWikiIntegrationTestCase {
 		] );
 		$this->assertSame( [ 'fr:A#x', 'it:B', 'de:C', 'es:D' ], $op->getLanguageLinks() );
 
+		$this->filterDeprecated( '/OutputPage::setLanguageLinks was deprecated/' );
 		$op->setLanguageLinks( [ TitleValue::tryNew( NS_MAIN, 'E', '', 'pt' ) ] );
 		$this->assertSame( [ 'pt:E' ], $op->getLanguageLinks() );
 
@@ -1828,6 +1829,10 @@ class OutputPageTest extends MediaWikiIntegrationTestCase {
 		) && count( $args ) >= 3 && $args[2] === null ) {
 			// Special placeholder because we can't get the actual title in the provider
 			$args[2] = $op->getTitle();
+		}
+
+		if ( $method === 'wrapWikiTextAsInterface' ) {
+			$this->expectDeprecationAndContinue( '/wrapWikiTextAsInterface/' );
 		}
 
 		$op->$method( ...$args );

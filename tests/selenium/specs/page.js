@@ -40,10 +40,6 @@ describe( 'Page', () => {
 		await expect( EditPage.content ).toBeDisplayed( { message: 'editor is still present' } );
 		await expect( EditPage.conflictingContent ).not.toBeDisplayed( { message: 'no edit conflict happened' } );
 
-		// T269566: Popup with text
-		// 'Leave site? Changes that you made may not be saved. Cancel/Leave'
-		// appears after the browser tries to leave the page with the preview.
-		await browser.reloadSession();
 	} );
 
 	it( 'should be creatable', async () => {
@@ -82,7 +78,7 @@ describe( 'Page', () => {
 
 		// check
 		await expect( EditPage.heading ).toHaveText( name );
-		await expect( EditPage.displayedContent ).toHaveTextContaining( editContent );
+		await expect( EditPage.displayedContent ).toHaveText( expect.stringContaining( editContent ) );
 	} );
 
 	it( 'should have history @daily', async () => {
@@ -104,7 +100,7 @@ describe( 'Page', () => {
 		await DeletePage.delete( name, 'delete reason' );
 
 		// check
-		await expect( DeletePage.displayedContent ).toHaveTextContaining( `"${ name }" has been deleted.` );
+		await expect( DeletePage.displayedContent ).toHaveText( expect.stringContaining( `"${ name }" has been deleted.` ) );
 	} );
 
 	it( 'should be restorable', async () => {
@@ -119,7 +115,7 @@ describe( 'Page', () => {
 		await RestorePage.restore( name, 'restore reason' );
 
 		// check
-		await expect( RestorePage.displayedContent ).toHaveTextContaining( `${ name } has been undeleted` );
+		await expect( RestorePage.displayedContent ).toHaveText( expect.stringContaining( `${ name } has been undeleted` ) );
 	} );
 
 	it( 'should be protectable', async () => {
@@ -156,7 +152,7 @@ describe( 'Page', () => {
 
 		await UndoPage.undo( name, previousRev, undoRev );
 
-		await expect( EditPage.displayedContent ).toHaveTextContaining( content );
+		await expect( EditPage.displayedContent ).toHaveText( expect.stringContaining( content ) );
 	} );
 
 } );

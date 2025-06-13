@@ -25,6 +25,7 @@ namespace MediaWiki\Actions;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Page\Article;
+use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\Watchlist\WatchedItemStore;
 use MediaWiki\Watchlist\WatchlistManager;
 
@@ -42,21 +43,25 @@ class UnwatchAction extends WatchAction {
 	 * @param IContextSource $context
 	 * @param WatchlistManager $watchlistManager
 	 * @param WatchedItemStore $watchedItemStore
+	 * @param UserOptionsLookup $userOptionsLookup
 	 */
 	public function __construct(
 		Article $article,
 		IContextSource $context,
 		WatchlistManager $watchlistManager,
-		WatchedItemStore $watchedItemStore
+		WatchedItemStore $watchedItemStore,
+		UserOptionsLookup $userOptionsLookup
 	) {
-		parent::__construct( $article, $context, $watchlistManager, $watchedItemStore );
+		parent::__construct( $article, $context, $watchlistManager, $watchedItemStore, $userOptionsLookup );
 		$this->watchlistManager = $watchlistManager;
 	}
 
+	/** @inheritDoc */
 	public function getName() {
 		return 'unwatch';
 	}
 
+	/** @inheritDoc */
 	public function onSubmit( $data ) {
 		$this->watchlistManager->removeWatch(
 			$this->getAuthority(),
@@ -66,6 +71,7 @@ class UnwatchAction extends WatchAction {
 		return true;
 	}
 
+	/** @inheritDoc */
 	protected function getFormFields() {
 		return [
 			'intro' => [
@@ -82,11 +88,13 @@ class UnwatchAction extends WatchAction {
 		$form->setSubmitTextMsg( 'confirm-unwatch-button' );
 	}
 
+	/** @inheritDoc */
 	public function onSuccess() {
 		$msgKey = $this->getTitle()->isTalkPage() ? 'removedwatchtext-talk' : 'removedwatchtext';
 		$this->getOutput()->addWikiMsg( $msgKey, $this->getTitle()->getPrefixedText() );
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}

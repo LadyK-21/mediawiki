@@ -64,6 +64,9 @@ For notes on 1.44.x and older releases, see HISTORY.
 * The SpecialUserRightsChangeableGroupsHook hook was added.
 * The UserLinkRendererUserPostRenderLink hook was added.
 * The LocalUserOptionsStoreSave hook was added.
+* The User::getConfirmationToken(), User::getConfirmationTokenUrl() and
+  User::getInvalidationTokenUrl() methods were added.
+* The User::getTokenUrl() method was made public.
 * …
 
 === External library changes in 1.45 ===
@@ -79,8 +82,11 @@ For notes on 1.44.x and older releases, see HISTORY.
 ==== Changed external libraries ====
 
 * Updated codex, codex-design-tokens and codex-icons
-  from v1.23.0 to v2.0.0.
+  from v1.23.0 to v2.1.0.
+* Updated psr/container from 1.1.2 to 2.0.2.
 * Updated wikimedia/shellbox from 4.2.0 to 4.3.0.
+* Updated symfony/yaml from 5.4.45 to 6.4.21.
+* Updated OOUI from v0.51.7 to v0.52.0.
 * …
 
 ===== Changed development-only external libraries =====
@@ -97,7 +103,8 @@ For notes on 1.44.x and older releases, see HISTORY.
 * …
 
 === Action API changes in 1.45 ===
-
+* (T396049) The list of domains supported by the upload-by-URL feature is now
+  exposed via meta=siteinfo.
 * …
 
 === Action API internal changes in 1.45 ===
@@ -112,6 +119,7 @@ because of Phabricator reports.
 * (T314476) Make Perso-Arabic the primary writing system for Kashmiri,
   under the language code "ks". "ks-arab" and "ks-deva" are preserved for
   backwards compatibility. "ks-deva" may be removed in a future release.
+* (T395223) Added language support for Yucatec Maya (yua).
 * …
 
 === Breaking changes in 1.45 ===
@@ -131,6 +139,7 @@ because of Phabricator reports.
   been removed.
 * AuthManager::forcePrimaryAuthenticationProviders(), deprecated in 1.43 has
   been removed.
+* User::whoIs() and ::whoIsReal(), deprecated since 1.43, have been removed.
 * Abstract function AuthenticationRequestTestCase::provideLoadFromSubmission is
   now static and has to be declared as static function when implemented.
 * Abstract function HookRunnerTestBase::provideHookRunners is
@@ -144,6 +153,16 @@ because of Phabricator reports.
 * Command::whitelistPaths, deprecated in 1.36, has been removed.
 * Some undocumented behaviors of ParserOptions::setInterfaceMessage() have
   been moved to a new method ParserOptions::setIsMessage(). (T393601, T395589)
+* The ParserOutput constructor now enforces strict type hints on its arguments.
+  Passing null as the $languageLinks parameter was deprecated in 1.43.
+* ParserOutput::addTemplate() now throws an InvalidArgumentException if an
+  interwiki link is provided; this was deprecated in 1.42.
+* ParserOutput::setPageProperty() now enforces a strict type hint of 'string'
+  on its $value parameter; non-string values were deprecated in 1.42.
+* The following methods in ParserOutput have been removed:
+  - ::getTimeSinceStart(), deprecated in 1.42
+  - ::__get()/::__set(), deprecated in 1.38
+    Dynamic properties continue to emit warnings in PHP >= 8.2.
 * …
 
 === Deprecations in 1.45 ===
@@ -156,6 +175,7 @@ because of Phabricator reports.
   emits deprecation warnings. Use ::getReadOnlyMode() service together
   with ::getConfiguredReason() and ::isConfiguredReadOnly() to check
   when a site is set to read-only mode.
+* OutputPage::wrapWikiTextAsInterface() has been deprecated.
 * Passing a string or UserIdentity object to DatabaseBlock::setTarget() or
   the 'address' parameter to DatabaseBlock::__construct() is now deprecated
   and will emit deprecation warnings. Use BlockTargetFactory to obtain a
@@ -164,6 +184,12 @@ because of Phabricator reports.
 * Calling ApiOptions::__construct() without $userOptionsManager and
   $preferencesFactory has been deprecated and emits deprecation warnings.
   Code that extends ApiOptions should instead extend ApiOptionsBase.
+* ParserOutput::getWarnings() has been deprecated. Use ::getWarningMsgs()
+  instead.
+* ParserOutput::setLanguageLinks(), deprecated in 1.42, now emits deprecation
+  warnings.
+* OutputPage::setLanguageLinks(), deprecated in 1.43, now emits deprecation
+  warnings.
 * Calling RevisionStore methods with a LinkTarget emits deprecation warnings
   now. It was already documented as deprecated since 1.36.
   - RevisionStore::getFirstRevision
@@ -209,7 +235,7 @@ The supported versions are:
 * MariaDB 10.3 or higher
 * MySQL 5.7.0 or higher
 * PostgreSQL 10 or later
-* SQLite 3.8.0 or later
+* SQLite 3.31.0 or later
 
 == Online documentation ==
 Documentation for both end-users and site administrators is available on

@@ -3,7 +3,6 @@
 namespace MediaWiki\Tests\Parser;
 
 use LogicException;
-use MediaWiki\Debug\MWDebug;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\ParserOptions;
@@ -16,6 +15,7 @@ use MediaWiki\Title\TitleValue;
 use MediaWiki\Utils\MWTimestamp;
 use MediaWikiLangTestCase;
 use Wikimedia\Bcp47Code\Bcp47CodeValue;
+use Wikimedia\Message\MessageValue;
 use Wikimedia\Parsoid\Core\SectionMetadata;
 use Wikimedia\TestingAccessWrapper;
 use Wikimedia\Tests\SerializationTestTrait;
@@ -168,12 +168,8 @@ class ParserOutputTest extends MediaWikiLangTestCase {
 	 * @covers \MediaWiki\Parser\ParserOutput::getPageProperties
 	 * @dataProvider providePageProperties
 	 */
-	public function testPageProperties( string $setPageProperty, $value1, $value2, bool $expectDeprecation = false ) {
+	public function testPageProperties( string $setPageProperty, $value1, $value2 ) {
 		$po = new ParserOutput();
-		if ( $expectDeprecation ) {
-			MWDebug::filterDeprecationForTest( '/::setPageProperty with non-string value/' );
-		}
-
 		$po->$setPageProperty( 'foo', $value1 );
 
 		$properties = $po->getPageProperties();
@@ -197,7 +193,6 @@ class ParserOutputTest extends MediaWikiLangTestCase {
 		yield 'Unsorted' => [ 'setUnsortedPageProperty', 'val', 'second val' ];
 		yield 'Numeric' => [ 'setNumericPageProperty', 42, 3.14 ];
 		yield 'Unsorted (old style)' => [ 'setPageProperty', 'val', 'second val' ];
-		yield 'Numeric (old style)' => [ 'setPageProperty', 123, 456, true ];
 	}
 
 	/**
@@ -921,6 +916,11 @@ class ParserOutputTest extends MediaWikiLangTestCase {
 				wfMessage( 'template-loop-warning', 'D' )->text(),
 				wfMessage( 'template-equals-warning' )->text(),
 			],
+			'getWarningMsgs' => [
+				MessageValue::new( 'duplicate-args-warning', [ 'A', 'B', 'C' ] ),
+				MessageValue::new( 'template-loop-warning', [ 'D' ] ),
+				MessageValue::new( 'template-equals-warning' ),
+			],
 			'$mFlags' => [ 'foo' => true, 'bar' => true, 'zoo' => true ],
 			'getUsedOptions' => [ 'Foo', 'Bar', 'Zoo' ],
 		] ];
@@ -1094,6 +1094,7 @@ class ParserOutputTest extends MediaWikiLangTestCase {
 	 */
 	public function testMergeInternalMetaDataFrom( array $aSpec, array $bSpec, $expected ) {
 		$this->filterDeprecated( '/^.*CacheTime::setCacheTime called with -1 as an argument/' );
+		$this->filterDeprecated( '/ParserOutput::getWarnings was deprecated/' );
 		$a = $this->createParserOutput( $aSpec );
 		$b = $this->createParserOutput( $bSpec );
 		$a->mergeInternalMetaDataFrom( $b );

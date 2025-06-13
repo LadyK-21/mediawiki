@@ -24,10 +24,6 @@
 
 	.mw-rcfilters-ui-row {
 		justify-content: flex-start;
-
-		.mw-rcfilters-ui-watchlistTopSectionWidget-editWatchlistButton {
-			justify-self: flex-end;
-		}
 	}
 
 	// On small screens, remove the table properties from the
@@ -35,6 +31,21 @@
 	@media screen and ( max-width: @max-width-breakpoint-tablet ) {
 		.mw-rcfilters-ui-row {
 			flex-direction: column;
+		}
+
+		.mw-rcfilters-ui-watchlistTopSectionWidget-buttonsSection {
+			display: flex;
+			flex-direction: row;
+		}
+
+		&-editWatchlistButton {
+			align-self: start;
+			min-width: 6em;
+			margin: 0.5em 0.5em 0 0.5em;
+		}
+
+		.mw-rcfilters-ui-watchlistTopSectionWidget-editWatchlistButtonIcon {
+			margin-right: 0.25em;
 		}
 	}
 
@@ -50,14 +61,37 @@
 
 		// T235535
 		&-editWatchlistButton {
-			align-self: start;
+			margin: 0.175em 0.5em 0.5em 0.175em;
+		}
+
+		.mw-rcfilters-ui-watchlistTopSectionWidget-editWatchlistButtonIcon {
+			margin-right: 0.275em;
+		}
+
+		.mw-rcfilters-ui-watchlistTopSectionWidget-buttonsSection {
+			min-width: 9em;
+		}
+	}
+}
+
+// T395741 Special case for Vector 2022
+// stylelint-disable-next-line selector-class-pattern
+.skin-vector-2022 {
+	.mw-rcfilters-ui-watchlistTopSectionWidget-buttonsSection {
+		display: flex;
+		flex-flow: column;
+		align-items: flex-end;
+		min-width: 16em;
+	}
+
+	@media screen and ( max-width: @max-width-breakpoint-tablet ) {
+		.mw-rcfilters-ui-watchlistTopSectionWidget-buttonsSection {
 			display: flex;
 			flex-direction: row;
-			min-width: 9em;
+		}
 
-			.mw-rcfilters-ui-watchlistTopSectionWidget-editWatchlistButtonIcon {
-				margin: 0 0.5em 0.5em 0;
-			}
+		.mw-rcfilters-ui-watchlistTopSectionWidget-editWatchlistButton {
+			margin: 0.175em 0.75em 0 0.75em;
 		}
 	}
 }

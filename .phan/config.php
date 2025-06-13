@@ -20,16 +20,12 @@
 
 $cfg = require __DIR__ . '/../vendor/mediawiki/mediawiki-phan-config/src/config.php';
 
-// Whilst MediaWiki is still supporting PHP 7.4+, this lets us run phan on higher versions of PHP
-// like 8.0 without phan trying to get us to make PHP 7.4-incompatible changes. This value should
-// match the PHP version specified in composer.json and PHPVersionCheck.php.
-$cfg['minimum_target_php_version'] = '7.4.3';
+// This value should match the PHP version specified in composer.json and PHPVersionCheck.php.
+$cfg['minimum_target_php_version'] = '8.1.0';
 
 $cfg['file_list'] = array_merge(
 	$cfg['file_list'],
-	class_exists( Socket::class ) ? [] : [ '.phan/stubs/Socket.php' ],
 	class_exists( AllowDynamicProperties::class ) ? [] : [ '.phan/stubs/AllowDynamicProperties.php' ],
-	class_exists( WeakMap::class ) ? [] : [ '.phan/stubs/WeakMap.php' ],
 	[
 		// This makes constants and globals known to Phan before processing all other files.
 		// You can check the parser order with --dump-parsed-file-list
@@ -51,20 +47,6 @@ $cfg['exclude_file_list'] = array_merge(
 		'maintenance/shell.php',
 	]
 );
-
-if ( PHP_VERSION_ID >= 80000 ) {
-	// Exclude PHP 8.0 polyfills if PHP 8.0+ is running
-	$cfg['exclude_file_list'] = array_merge(
-		$cfg['exclude_file_list'],
-		[
-			'vendor/symfony/polyfill-php80/Resources/stubs/Attribute.php',
-			'vendor/symfony/polyfill-php80/Resources/stubs/PhpToken.php',
-			'vendor/symfony/polyfill-php80/Resources/stubs/Stringable.php',
-			'vendor/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
-			'vendor/symfony/polyfill-php80/Resources/stubs/ValueError.php',
-		]
-	);
-}
 
 $cfg['autoload_internal_extension_signatures'] = [
 	'excimer' => '.phan/internal_stubs/excimer.phan_php',

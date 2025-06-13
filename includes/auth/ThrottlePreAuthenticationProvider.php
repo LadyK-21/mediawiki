@@ -96,6 +96,7 @@ class ThrottlePreAuthenticationProvider extends AbstractPreAuthenticationProvide
 		}
 	}
 
+	/** @inheritDoc */
 	public function testForAccountCreation( $user, $creator, array $reqs ) {
 		if ( !$this->accountCreationThrottle || !$creator->isPingLimitable() ) {
 			return \StatusValue::newGood();
@@ -118,6 +119,7 @@ class ThrottlePreAuthenticationProvider extends AbstractPreAuthenticationProvide
 		return \StatusValue::newGood();
 	}
 
+	/** @inheritDoc */
 	public function testForAuthentication( array $reqs ) {
 		if ( !$this->passwordAttemptThrottle ) {
 			return \StatusValue::newGood();
@@ -126,7 +128,7 @@ class ThrottlePreAuthenticationProvider extends AbstractPreAuthenticationProvide
 		$ip = $this->manager->getRequest()->getIP();
 		try {
 			$username = AuthenticationRequest::getUsernameFromRequests( $reqs );
-		} catch ( \UnexpectedValueException $e ) {
+		} catch ( \UnexpectedValueException ) {
 			$username = null;
 		}
 

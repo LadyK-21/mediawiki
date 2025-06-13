@@ -30,6 +30,7 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\Exception\MWException;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\HookContainer\HookRunner;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\FauxRequest;
@@ -1032,7 +1033,7 @@ class SessionManager implements SessionManagerInterface {
 		}
 		try {
 			$ip = $session->getRequest()->getIP();
-		} catch ( MWException $e ) {
+		} catch ( MWException ) {
 			return;
 		}
 		if ( $ip === '127.0.0.1' || $proxyLookup->isConfiguredProxy( $ip ) ) {
@@ -1121,7 +1122,7 @@ class SessionManager implements SessionManagerInterface {
 		$user = ( !$info->getUserInfo() || $info->getUserInfo()->isAnon() )
 			? '<anon>'
 			: $info->getUserInfo()->getName();
-		$this->logger->log( $level, 'Session store: {action} for {reason}', $data + [
+		LoggerFactory::getInstance( 'session-sampled' )->log( $level, 'Session store: {action} for {reason}', $data + [
 				'action' => $data['type'],
 				'reason' => $data['reason'],
 				'id' => $info->getId(),
